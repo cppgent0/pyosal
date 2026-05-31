@@ -1,0 +1,67 @@
+{
+  // location of output and report files
+  "outdir": "out/ver",
+  // location of status.json file
+  "statusdir": "out",
+  // one of: local, shared
+  "storage_type": "local",
+  // shared directory when storage_type is "shared"
+  "storage_shared_dir": null,
+  // one of: formal, dryrun, dev
+  "test_run_type": "dev",
+  // the id that identifies this test run
+  "test_run_id": "dev-001",
+  // format of the date time stamp on the reports
+  "dts_format": "%Y-%m-%d %H:%M:%S %Z",
+  // flag indicates to use UTC or local time
+  "use_utc": false,
+  // path to json file containing requirement ids and descriptions
+  "reqmt_json_path": "srs.json",
+  // list of testers
+  "testers": {
+    "T1": "Tester 1",
+    "T2": "Tester 2"
+  },
+  // which report types to generate
+  "report_types": ["min-html"],
+  // tp_protocol report: header/footer
+  "tp_protocol": {
+    "orientation": "landscape",
+    "page_size": "letter",
+    "header": {
+      "middle": "<b>Test Protocol</b>"
+    },
+    "footer": {
+      "right": "<pageno>"
+    }
+  },
+  // tp_report report: header/footer
+  "tp_report": {
+    "orientation": "landscape",
+    "page_size": "letter",
+    "header": {
+      "middle": "<b>Test Report</b>"
+    },
+    "footer": {
+      "right": "<pageno>"
+    }
+  },
+  // trace report: header/footer
+  "trace": {
+    "header": {
+      "middle": "<b>Trace Matrix - Automated Tests</b>"
+    },
+    "footer": {
+      "right": "<pageno>"
+    }
+  },
+  // summary report: header/footer
+  "summary": {
+    "header": {
+      "middle": "<b>Automated Test Summary</b>"
+    },
+    "footer": {
+      "right": "<pageno>"
+    }
+  }
+}

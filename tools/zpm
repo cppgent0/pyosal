@@ -1,0 +1,285 @@
+#! /usr/bin/env bash
+
+# Note: this template must be executable so that zpm is executable.
+
+export XP_MAIN="zpm"
+export XP_CMN_MAIN_DIR="$HOME/.local/bin"
+export XPLAT_BRANCH="notset"
+export XPLAT_REPO_URL="git@bitbucket.org:arrizza-public/xplat-utils.git"
+export XPLAT_LOCAL_DIR="tools/xplat_utils"
+export XP_LOCAL_MAIN="./tools/$XP_MAIN"
+
+export XP_CMN_MAIN="notset"
+export XP_CMN_DIR="notset"
+export XP_CMN_XPLAT_DIR="notset"
+export XP_CMN_VENV_DIR="notset"
+
+# -------------------
+# indicates the start of a command
+function log_start {
+  tag="$1"
+  printf "%-4s %-8s %s\n" "----" "starting:" "$tag"
+}
+
+# -------------------
+# logs a line with a note indicator
+function log_note {
+  printf "%-4s %s\n" "  --" "$1"
+}
+
+# -------------------
+# logs a line with a note indicator
+function log_note2 {
+  printf "%-4s %-15s %s\n" "  --" "$1" "$2"
+}
+
+# -------------------
+# logs a line
+function log_line {
+  printf "%-4s %s\n" " " "$1"
+}
+
+# -------------------
+# logs an ok line
+function log_ok {
+  printf "%-4s %s\n" "OK" "$1"
+}
+
+# -------------------
+# logs a warning
+function log_warn {
+  printf "%-4s %s\n" "WARN" "$1"
+}
+
+# -------------------
+# logs an error
+function log_err {
+  printf "%-4s %s\n" "ERR" "$1"
+}
+
+# -------------------
+# prints OK or WARN depending on the return code of the previous command
+# note: assumes the git command is in the first part of a piped command
+function log_check {
+  rc="${PIPESTATUS[0]}"
+  tag="$1"
+  if [ "$rc" == 0 ]; then
+    log_note "$tag rc=$rc"
+  else
+    log_err "$tag rc=$rc"
+  fi
+}
+
+# -------------------
+function set_branch {
+  local_branch_file='./zpm_branch'
+  global_branch_file="$XP_CMN_DIR/zpm_branch"
+  default_branch_file="tools/zpm_branch_default"
+  if [ -f "$local_branch_file" ]; then
+    # shellcheck disable=SC1090
+    source "$local_branch_file"
+    if [[ $1 = "verbose" ]]; then
+      log_warn "local branch:  ${XPLAT_BRANCH}, see file $local_branch_file"
+    fi
+  elif [[ -f $global_branch_file ]]; then
+    # shellcheck disable=SC1090
+    source "$global_branch_file"
+    if [[ $1 = "verbose" ]]; then
+      log_warn "global branch:  ${XPLAT_BRANCH}, see file $global_branch_file"
+    fi
+  elif [[ ! -f $default_branch_file ]]; then
+    # fallback branch
+    export XPLAT_BRANCH="v2.0.0"
+  else
+    # shellcheck disable=SC1090
+    source "$default_branch_file"
+    if [[ $1 = "verbose" ]]; then
+      log_line "default branch: ${XPLAT_BRANCH}"
+    fi
+  fi
+}
+
+# -------------------
+function set_params {
+  export XP_CMN_MAIN_DIR="$HOME/.local/bin"
+  export XP_CMN_MAIN="$XP_CMN_MAIN_DIR/$XP_MAIN"
+  export XP_CMN_DIR="$HOME/.local/share/xplat-common"
+  export XP_CMN_XPLAT_DIR="$XP_CMN_DIR/$XPLAT_BRANCH/xplat_utils"
+  export XP_CMN_VENV_DIR="$XP_CMN_DIR/venv"
+}
+
+# --------------------
+function create_cmn_dir {
+  if [[ ! -d $XP_CMN_MAIN_DIR ]]; then
+    mkdir -p "$XP_CMN_MAIN_DIR"
+    log_check "mkdir main_dir"
+  fi
+
+  if [[ ! -d $XP_CMN_DIR ]]; then
+    mkdir -p "$XP_CMN_DIR"
+    log_check "mkdir cmn_dir"
+  fi
+}
+
+# --------------------
+function clone_xplat {
+  if [[ ! -d $XP_CMN_XPLAT_DIR ]]; then
+    pushd "$XP_CMN_DIR" >/dev/null || exit 1
+    git clone --branch "$XPLAT_BRANCH" "$XPLAT_REPO_URL" "$XP_CMN_XPLAT_DIR" 2>&1 | sed -e 's/^/  -- /'
+    log_check "clone"
+    popd >/dev/null || exit 1
+  fi
+}
+
+# --------------------
+function checkout_xplat_branch {
+  git checkout "$XPLAT_BRANCH" | sed -e 's/^/  -- /'
+  log_check
+
+  curr_branch="$(git branch --show-current)"
+  if [[ "$curr_branch" != "$XPLAT_BRANCH" ]]; then
+    log_err "could not go to branch $XPLAT_BRANCH, exiting"
+    exit 1
+  fi
+}
+
+# --------------------
+function check_for_xplat_updates {
+  curr_branch="$1"
+  log_note2 "check updates:" "$curr_branch"
+  git fetch -q | sed -e 's/^/  -- /'
+  LOCAL=$(git rev-parse HEAD)
+  REMOTE=$(git rev-parse "@{upstream}")
+  if [[ "$LOCAL" = "$REMOTE" ]]; then
+    if [[ $(git status --no-verbose --porcelain) ]]; then
+      log_warn "there are local xplat changes"
+    else
+      log_ok "up to date"
+    fi
+  elif [[ $LOCAL = $(git merge-base HEAD "@{upstream}") ]]; then
+    log_start "git pull"
+    git pull | sed -e 's/^/  -- /'
+    log_check
+    log_note2 "updated branch:" "$curr_branch"
+  fi
+}
+
+# --------------------
+function update_xplat {
+  pushd "$XP_CMN_XPLAT_DIR" >/dev/null || exit 1
+  curr_branch="$(git branch --show-current)"
+  log_note2 "curr branch:" "$curr_branch"
+
+  if [[ "$curr_branch" != "$XPLAT_BRANCH" ]]; then
+    checkout_xplat_branch
+  else
+    check_for_xplat_updates "$curr_branch"
+  fi
+  popd >/dev/null || exit 1
+}
+
+# --------------------
+function set_simlink {
+  if [[ "$OSTYPE" == "msys" || "$OSTYPE" == "cygwin" || "$OSTYPE" == "win32" ]]; then
+    # WINDOWS: requires Developer Mode enabled
+    # Use PowerShell's New-Item for reliable symlinks
+    export MSYS="winsymlinks:nativestrict"
+    ln -snf "$XP_CMN_XPLAT_DIR" "$XPLAT_LOCAL_DIR"
+
+    # LINK=$(cygpath -w "$XPLAT_LOCAL_DIR")
+    # TARGET=$(cygpath -w "$XP_CMN_XPLAT_DIR")
+    # # cmd //c "mklink /d \"$LINK\" \"$TARGET\""
+    # powershell.exe -Command "New-Item -ItemType SymbolicLink -Path '$LINK' -Value '$TARGET' -Force"
+
+    #     powershell.exe -Command "New-Item -ItemType SymbolicLink -Path '$XP_CMN_XPLAT_DIR' -Target '$XPLAT_LOCAL_DIR' -Force"
+    # windows: mklink /D ".\tools\xplat_utils" "C:\Users\arrizza\.local\share\xplat-common\xplat-utils"
+  else
+    # UNIX (Ubuntu/macOS): Standard ln command
+    if [[ ! -L "$XPLAT_LOCAL_DIR" ]]; then
+      log_note "not a link: $XPLAT_LOCAL_DIR, deleting it"
+      rm -rf $XPLAT_LOCAL_DIR
+      # fix git status
+      git rm -r --cached $XPLAT_LOCAL_DIR
+    fi
+    ln -snf "$XP_CMN_XPLAT_DIR" "$XPLAT_LOCAL_DIR"
+  fi
+
+  log_note "softlink: $XPLAT_LOCAL_DIR -> $(readlink "$XPLAT_LOCAL_DIR")"
+  # windows: (Get-Item "$XPLAT_LOCAL_DIR").Target
+}
+
+# --------------------
+function xplat_install {
+  set_branch verbose
+  set_params
+  create_cmn_dir
+  clone_xplat
+  update_xplat
+  set_simlink
+  tools/xplat_utils/install/do_install_basic
+
+  cp "$XP_LOCAL_MAIN" "$XP_CMN_MAIN"
+}
+
+# --------------------
+function double_check {
+  if [[ ! -d $XP_CMN_MAIN_DIR ]]; then
+    log_warn "$XP_CMN_MAIN_DIR does not exist; run \"$XP_LOCAL_MAIN xplat-install\""
+    exit 1
+  fi
+
+  if [[ ! -d $XPLAT_LOCAL_DIR ]]; then
+    log_warn "$XPLAT_LOCAL_DIR does not exist; run \"$XP_LOCAL_MAIN xplat-install\""
+    exit 1
+  fi
+
+  if [[ ! -f "$XP_CMN_MAIN" ]]; then
+    log_warn "$XP_CMN_MAIN does not exist; run \"$XP_LOCAL_MAIN xplat-install\""
+    exit 1
+  fi
+}
+
+# --------------------
+# ---- Main
+# uncomment for testing
+# log_start "project repo: $(git config --get remote.origin.url)"
+# rm -rf "$XP_CMN_XPLAT_DIR"
+# unlink "$XPLAT_LOCAL_DIR"
+# cp "$XP_LOCAL_MAIN" "$XP_CMN_BIN"
+
+if [[ "$1" = "xplat-install" ]]; then
+  xplat_install
+  # at this point: the repo exists and XPLAT_LOCAL_DIR is there
+  exit 0
+fi
+
+set_branch quiet
+set_params
+
+if [[ "$1" = "set-params" ]]; then
+  echo "export XPLAT_BRANCH='$XPLAT_BRANCH'"
+  echo "export XP_CMN_MAIN='$XP_CMN_MAIN'"
+  echo "export XP_CMN_DIR='$XP_CMN_DIR'"
+  echo "export XP_CMN_XPLAT_DIR='$XP_CMN_XPLAT_DIR'"
+  echo "export XP_CMN_VENV_DIR='$XP_CMN_VENV_DIR'"
+  exit 0
+fi
+
+if [[ "$1" = "env-install" ]]; then
+  "$XPLAT_LOCAL_DIR/zpm_env_install" "$@"
+  exit 0
+fi
+
+if [[ ! -d "$XPLAT_LOCAL_DIR" ]]; then
+  log_err "dir does exist: $XPLAT_LOCAL_DIR"
+  log_err "move to a project directory"
+  exit 0
+fi
+
+if [[ ! -L "$XPLAT_LOCAL_DIR" ]]; then
+  log_err "dir is not a softlink: $XPLAT_LOCAL_DIR"
+  log_err "run 'zpm xplat-install'"
+  exit 0
+fi
+
+"$XPLAT_LOCAL_DIR/zpm_ubu_main" "$@"

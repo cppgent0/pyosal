@@ -1,0 +1,75 @@
+# macos
+/**/.DS_Store
+
+# emacs
+/.#*
+*~
+.~lock.*
+
+# vim
+*.swo
+*.swp
+
+# publish
+*.egg-info/
+/setup.cfg
+/setup.py
+/pyproject.toml
+/MANIFEST.in
+
+# doc
+/Doxyfile
+
+# PyCharm
+/.idea/vcs.xml
+/.idea/workspace.xml
+
+# Compiled Python bytecode
+*.py[cod]
+__pycache__/
+/**/__pycache__/
+*$py.class
+.pytest_cache/
+cmake-build-debug
+cmake-build-release
+/compile_commands.json
+/cppcheck_suppressions.txt
+/.clang-tidy
+debug
+release
+.ruff_cache
+
+# UTs and other
+.coverage
+.coverage.*
+
+# output directories
+/out/
+dist
+/dist/*
+*.log
+build
+/build/*
+/node_modules/*
+
+# local environment
+# note xplat_utils: since it's a softlink, no trailing slash!
+/tools/xplat_utils
+zsubm_branch
+/venv/
+/tools/version_info.json
+/tools/set_cfg.sh
+# generated file
+Findcpip.cmake
+/staging/
+
+# ruby
+/.bundle/
+/Gemfile.lock
+/.yardopts
+/.rubocop.yml
+/*.gem
+
+# personal files
+pf*
+/pf_*/

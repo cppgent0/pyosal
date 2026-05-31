@@ -1,0 +1,316 @@
+{
+  // common vscode
+  "explorer.autoReveal": false,
+  // uses these for skipping formatting or associating with correct formatter
+  "files.associations": {
+    "rubocop.yml": "skip-formatting",
+    ".rubocop.yml": "skip-formatting",
+    ".yardopts": "skip-formatting",
+    "**/*.egg-info/**/*": "skip-formatting",
+    "Makefile": "makefile",
+    "Makefile.ubuntu": "makefile",
+    "Makefile.macos": "makefile",
+    "Makefile.win": "makefile",
+    "Makefile.msys2": "makefile",
+    "**/clang_tidy_template.yaml": "yaml",
+    "**/.clang-tidy": "yaml"
+  },
+  "[skip-formatting]": {
+    "editor.formatOnSave": false,
+    "editor.defaultFormatter": null
+  },
+  // === git
+  "git.blame.editorDecoration.enabled": false,
+  "gitlens.currentLine.enabled": false,
+  // === general editor
+  "editor.autoIndent": "advanced",
+  "editor.autoIndentOnPaste": true,
+  "editor.detectIndentation": false,
+  "editor.indentSize": "tabSize",
+  "editor.defaultFormatter": "esbenp.prettier-vscode",
+  // === prettier settings
+  "prettier.documentSelectors": ["**/.editorconfig"],
+  // === python
+  "python-envs.defaultEnvManager": "ms-python.python:system",
+  "python-envs.workspaceSearchPaths": [
+    "%USERPROFILE%/.local/share/xplat-common"
+  ],
+  "python.analysis.typeCheckingMode": "off",
+  "[python]": {
+    "editor.defaultFormatter": "charliermarsh.ruff",
+    "editor.formatOnSave": true,
+    "editor.detectIndentation": false,
+    "editor.insertSpaces": true,
+    "editor.tabSize": 2,
+    "editor.codeActionsOnSave": {
+      "source.organizeImports.ruff": "always",
+      "source.fixAll.ruff": "always"
+    }
+  },
+  "ruff.configuration": {
+    "line-length": 140,
+    "lint": {
+      "select": ["E", "F", "W", "I"],
+      "fixable": ["ALL", "E261"]
+    },
+    "format": {
+      "quote-style": "single"
+    }
+  },
+  // === ruby
+  "rubyLsp.bundleGemfile": "Gemfile",
+  "rubyLsp.formatter": "rubocop_internal",
+  "rubyLsp.rubyVersionManager": { "identifier": "none" },
+  "rubyLsp.enabledFeatures": {
+    "diagnostics": true,
+    "formatting": true
+  },
+  "[ruby]": {
+    "editor.defaultFormatter": "Shopify.ruby-lsp",
+    "editor.formatOnSave": true,
+    "editor.formatOnType": true,
+    "editor.detectIndentation": false,
+    "editor.insertSpaces": true,
+    "editor.tabSize": 2
+  },
+  // === yaml
+  "yaml.format.enable": true,
+  "[yaml]": {
+    "editor.defaultFormatter": "redhat.vscode-yaml",
+    "editor.formatOnSave": true,
+    "editor.detectIndentation": false,
+    "editor.insertSpaces": true,
+    "editor.tabSize": 2
+  },
+  // === c/cpp
+  "C_Cpp.errorSquiggles": "enabled",
+  "[cpp]": {
+    "editor.defaultFormatter": "ms-vscode.cpptools",
+    "editor.formatOnSave": true,
+    "editor.detectIndentation": false,
+    "editor.insertSpaces": true,
+    "editor.tabSize": 2
+  },
+  "[c]": {
+    "editor.defaultFormatter": "ms-vscode.cpptools",
+    "editor.formatOnSave": true,
+    "editor.detectIndentation": false,
+    "editor.insertSpaces": true,
+    "editor.tabSize": 2
+  },
+  // === bash
+  // "bashIde.shellcheckArguments": "-x -e 2317",
+  // "shellcheck.disableVersionCheck": false,
+  // "shellcheck.run": "onSave",
+  "shellcheck.customArgs": ["-x", "--source-path=SCRIPTDIR"],
+  "shellcheck.exclude": ["2317"],
+  // "shellcheck.excludeInterpreter": ["python", "python3", "python3.12"],
+  "shellcheck.ignorePatterns": {
+    "**/*.py": true
+  },
+  // -- shell script formatting
+  "shfmt.executablePath": "shfmt",
+  "shellformat.flag": "-i 2",
+  "shellformat.path": "shfmt",
+  "[shellscript]": {
+    "editor.defaultFormatter": "mkhl.shfmt",
+    "editor.formatOnSave": true,
+    "editor.detectIndentation": false,
+    "editor.insertSpaces": true,
+    "editor.tabSize": 2
+  },
+  // === json
+  "[json]": {
+    "editor.defaultFormatter": "esbenp.prettier-vscode",
+    "editor.formatOnSave": true,
+    "editor.detectIndentation": false,
+    "editor.insertSpaces": true,
+    "editor.tabSize": 2
+  },
+  "[jsonc]": {
+    "editor.defaultFormatter": "esbenp.prettier-vscode",
+    "editor.formatOnSave": true,
+    "editor.detectIndentation": false,
+    "editor.insertSpaces": true,
+    "editor.tabSize": 2
+  },
+  // === markdown
+  "[markdown]": {
+    "editor.defaultFormatter": "DavidAnson.vscode-markdownlint",
+    "editor.formatOnSave": true,
+    "editor.detectIndentation": false,
+    "editor.insertSpaces": true,
+    "editor.tabSize": 4,
+    "editor.codeActionsOnSave": {
+      "source.fixAll.markdownlint": "explicit"
+    }
+  },
+  "markdownlint.config": {
+    "MD001": false, // jumping to #### from ##
+    "MD004": { "style": "asterisk" }, // for bullet points
+    "MD007": { "indent": 4 },
+    "MD009": { "br_spaces": 0 }, // removes trailing spaces
+    "MD010": { "code_blocks": true }, // no hard tabs
+    "MD035": { "style": "---" }, // horizontal rules
+    "MD041": false, // first line should be a heading
+    "MD047": true // files ends with newline
+  },
+  // === web
+  "[javascript]": {
+    "editor.defaultFormatter": "esbenp.prettier-vscode",
+    "editor.formatOnSave": true,
+    "editor.detectIndentation": false,
+    "editor.insertSpaces": true,
+    "editor.tabSize": 2
+  },
+  // === other formatters
+  "[go.mod]": {
+    "editor.defaultFormatter": "golang.go",
+    "editor.formatOnSave": true,
+    "editor.detectIndentation": false,
+    "editor.insertSpaces": false,
+    "editor.tabSize": 4
+  },
+  "[go.work]": {
+    "editor.defaultFormatter": "golang.go",
+    "editor.formatOnSave": true,
+    "editor.detectIndentation": false,
+    "editor.insertSpaces": false,
+    "editor.tabSize": 4
+  },
+  "[go]": {
+    "editor.defaultFormatter": "golang.go",
+    "editor.formatOnSave": true,
+    "editor.detectIndentation": false,
+    "editor.insertSpaces": false,
+    "editor.tabSize": 4
+  },
+  // === other formatters
+  "[editorconfig]": {
+    "editor.defaultFormatter": "esbenp.prettier-vscode"
+  },
+  // === multiple file formatting
+  "formatFiles.excludedFolders": [
+    "venv",
+    "out",
+    "debug",
+    "build",
+    ".coverage",
+    "coverage",
+    ".idea",
+    ".vscode",
+    ".git",
+    "htmlcov",
+    "pf_*",
+    "**/pf_*",
+    "*.egg-info",
+    "**/*.egg-info",
+    "staging",
+    "web-under-const",
+    "web-theme",
+    "flutter_build",
+    "__pycache__",
+    ".pytest_cache",
+    ".ruff_cache",
+    ".zig-cache",
+    "cover_db",
+    "cmake-build-debug",
+    "cmake-build-release",
+    "tools/xplat_utils",
+    "node_modules",
+    "dist",
+    ".chrome"
+  ],
+  "formatFiles.excludePattern": "pf_*,**/pf_,**/pf_*.*,**/*.zip,*.zip,**/*.bak,*.bak,**/*.txt,*.txt,**/*.docx,*.docx,**/*.xlsx,*.xlsx,**/*.csv,*.csv,**/*.ods,*.ods,**/*.min.css,*/*.min.css,__pycache__/**,.ruff_cache/**/*,.pytest_cache/**/*,**/*.pyc,*.pyc,**/*.stl,*.stl,**/*.pdf,*.pdf,**/.gitignore,*/.gitignore,.coverage,cppcheck_suppressions.txt,compile_commands.json,_Deparsed_XSubs.pm",
+  "formatFiles.runOrganizeImports": true,
+  "formatFiles.useGitIgnore": false,
+  // "formatFiles.extensionsToInclude": [ default: '*' ]
+  "formatFiles.inheritWorkspaceExcludedFiles": true,
+  "files.exclude": {
+    "**/__pycache__": true,
+    "**/.ruff_cache": true,
+    "**/pytest_cache": true,
+    "**/egg-info": true
+  },
+  // === spellchecker
+  "cSpell.diagnosticLevel": "Hint",
+  "cSpell.ignorePaths": [
+    "**/rubocop.yml",
+    "**/.rubocop.yml",
+    ".vscode/*",
+    "Makefile.*"
+  ],
+  "cSpell.words": [
+    "ABRT",
+    "alamake",
+    "Arrizza",
+    "atmel",
+    "avrdude",
+    "bcompare",
+    "cpip",
+    "cppcheck",
+    "devpy",
+    "devrb",
+    "dogen",
+    "Doxyfile",
+    "excp",
+    "Findcpip",
+    "gitmodule",
+    "Makefiles",
+    "medver",
+    "msys",
+    "nocov",
+    "notset",
+    "osal",
+    "otfs",
+    "outofdate",
+    "OVERALLRC",
+    "posn",
+    "prereqs",
+    "pyalamake",
+    "pybin",
+    "pycache",
+    "pycaches",
+    "pycro",
+    "pyexe",
+    "pylint",
+    "pyosal",
+    "pypi",
+    "pyproject",
+    "pytest",
+    "pythonpath",
+    "reqids",
+    "reqmts",
+    "rubocop",
+    "sdist",
+    "subm",
+    "vfox",
+    "venv",
+    "virtualenv",
+    "winget",
+    "xplat",
+    "yardopts",
+    "zsubm",
+    "ZTESTIT"
+  ],
+  // === makefile
+  "makefile.configureOnOpen": true,
+
+  // === terminal profiles
+  "terminal.integrated.defaultProfile.windows": "MSYS2 Bash",
+  "terminal.integrated.profiles.windows": {
+    "MSYS2 Bash": {
+      "path": "C:\\msys64\\usr\\bin\\bash.exe",
+      "args": ["--login", "-i"],
+      "env": { "CHERE_INVOKING": "1", "MSYSTEM": "UCRT64" }
+    }
+  },
+  "terminal.integrated.defaultProfile.osx": "zsh",
+  "terminal.integrated.profiles.osx": {
+    "zsh": { "path": "/bin/zsh" }
+  },
+  "terminal.integrated.defaultProfile.linux": "bash",
+  "terminal.integrated.profiles.linux": {
+    "bash": { "path": "/bin/bash" }
+  }
+}

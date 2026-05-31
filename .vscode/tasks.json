@@ -1,0 +1,19 @@
+{
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "label": "Shellharden: Suggest Changes",
+      "type": "shell",
+      "command": "~/bin/shellharden --suggest ${file}",
+      "problemMatcher": [],
+      "group": "none"
+    },
+    {
+      "label": "Shellharden: Fix Current File",
+      "type": "shell",
+      "command": "~/bin/shellharden --replace ${file}",
+      "problemMatcher": [],
+      "group": "none"
+    }
+  ]
+}
