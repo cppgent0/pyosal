@@ -422,7 +422,8 @@ class PyOsal(metaclass=_PyOsalMeta):
         else:
             line_to_save = f'  -- {line}'
         line_to_save = line_to_save.replace('←', '\x1b')
-        sys.stdout.write(line_to_save + '\n')
+        line_to_save.encode('utf-8')
+        sys.stdout.write(line_to_save.encode('utf-8', errors='replace') + '\n')
         self.stdout_flush()
 
         if fp:
