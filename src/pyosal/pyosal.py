@@ -294,7 +294,7 @@ class PyOsal(metaclass=_PyOsalMeta):
             chunk = os.read(proc.stdout.fileno(), 256)
             if not chunk:
                 break
-            chunk_str = chunk.decode('utf-8', errors='surrogateescape')
+            chunk_str = chunk.decode('utf-8', errors='replace')
             chunk_str = chunk_str.replace('\r', '')
 
             # for char in chunk:
@@ -422,8 +422,6 @@ class PyOsal(metaclass=_PyOsalMeta):
         else:
             line_to_save = f'  -- {line}'
         line_to_save = line_to_save.replace('←', '\x1b')
-        line_to_save.encode('utf-8')
-        # sys.stdout.write(line_to_save.encode('utf-8', errors='replace') + '\n')
         sys.stdout.write(line_to_save + '\n')
         self.stdout_flush()
 
