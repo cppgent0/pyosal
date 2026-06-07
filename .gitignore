@@ -45,12 +45,12 @@ release
 
 # output directories
 /out/
+/node_modules/*
 dist
 /dist/*
 *.log
 build
 /build/*
-/node_modules/*
 
 # local environment
 # note xplat_utils: since it's a softlink, no trailing slash!

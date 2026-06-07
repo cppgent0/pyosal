@@ -4,6 +4,7 @@ pyexe="unset"
 source tools/zpm_env quiet
 
 # update the local modules
+# $pyexe -m pip install --config-settings editable_mode=compat ~/projects/web/py-mods/pyosal
 # $pyexe -m pip install --config-settings editable_mode=compat ~/projects/web/medver/medver-pytest
 # $pyexe -m pip install --config-settings editable_mode=compat ~/projects/web/py-mods/falcon-logger
 # TODO add here as necessary
@@ -13,7 +14,7 @@ source tools/zpm_env quiet
 #   go to tools/pyproject_template.toml; uncomment line: "Private :: Do Not Upload"
 #   go to tools/requirements.txt; uncomment pyosal line
 #   zpm publish
-$pyexe -m pip install --config-settings editable_mode=compat ~/projects/web/py-mods/pyosal
+# $pyexe -m pip install --config-settings editable_mode=compat ~/projects/web/py-mods/pyosal
 
 pip install --upgrade pip
 

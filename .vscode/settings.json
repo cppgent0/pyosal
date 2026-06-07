@@ -24,17 +24,19 @@
   "gitlens.currentLine.enabled": false,
   // === general editor
   "editor.autoIndent": "advanced",
+  "editor.rulers": [140],
+  "editor.wordWrap": "wordWrapColumn",
+  "editor.wordWrapColumn": 140,
   "editor.autoIndentOnPaste": true,
   "editor.detectIndentation": false,
   "editor.indentSize": "tabSize",
   "editor.defaultFormatter": "esbenp.prettier-vscode",
   // === prettier settings
   "prettier.documentSelectors": ["**/.editorconfig"],
+  "prettier.printWidth": 140,
   // === python
   "python-envs.defaultEnvManager": "ms-python.python:system",
-  "python-envs.workspaceSearchPaths": [
-    "%USERPROFILE%/.local/share/xplat-common"
-  ],
+  "python-envs.workspaceSearchPaths": ["%USERPROFILE%/.local/share/xplat-common"],
   "python.analysis.typeCheckingMode": "off",
   "[python]": {
     "editor.defaultFormatter": "charliermarsh.ruff",
@@ -158,6 +160,8 @@
   // === web
   "[javascript]": {
     "editor.defaultFormatter": "esbenp.prettier-vscode",
+    "editor.wordWrap": "wordWrapColumn",
+    "editor.wordWrapColumn": 140,
     "editor.formatOnSave": true,
     "editor.detectIndentation": false,
     "editor.insertSpaces": true,
@@ -234,12 +238,7 @@
   },
   // === spellchecker
   "cSpell.diagnosticLevel": "Hint",
-  "cSpell.ignorePaths": [
-    "**/rubocop.yml",
-    "**/.rubocop.yml",
-    ".vscode/*",
-    "Makefile.*"
-  ],
+  "cSpell.ignorePaths": ["**/rubocop.yml", "**/.rubocop.yml", ".vscode/*", "Makefile.*"],
   "cSpell.words": [
     "ABRT",
     "alamake",

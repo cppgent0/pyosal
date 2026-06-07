@@ -5,6 +5,7 @@ import re
 import subprocess
 import sys
 import threading
+import time
 
 
 # -------------------
@@ -224,6 +225,81 @@ class PyOsal(metaclass=_PyOsalMeta):
     ]
 
     # -------------------
+    ## run a command in a subprocess with a timeout
+    #
+    # @param timeout       (integer) max time to run cmd before terminating/killing the process
+    # @param cmd           the command to run
+    # @param working_dir   the working directory to run the command in; default is '.'
+    # @param use_raw_log   no prefix on line
+    # @param log_file      the log_file to write the lines to
+    # @param print_cb      callback function used to print output; default is None
+    # @param env           the environment variables to use
+    # @param quiet         if True, do not write to stdout
+    # @return rc - return code, lines - the output as a list of lines
+    def run_cmd_timeout(
+        self,
+        timeout,
+        cmd,
+        working_dir='.',
+        use_raw_log=False,
+        log_file=None,
+        print_cb=None,
+        env=None,
+        quiet=False,
+    ):  # pylint: disable=too-many-locals
+        # assume timeout is an integer
+
+        # Run your existing function in a background thread
+        shared_container = []
+        t = threading.Thread(target=self.run_cmd, args=(cmd, working_dir, use_raw_log, log_file, print_cb, env, quiet, shared_container))
+        t.start()
+
+        # Wait briefly for the subprocess to actually initialize and populate the container
+        while not shared_container:
+            time.sleep(0.01)
+
+        proc = shared_container[0]
+        start_time = time.time()
+
+        rc = 0
+        timed_out = False
+        while t.is_alive():
+            if (time.time() - start_time) > timeout:
+                sys.stdout.write(f'\n[timeout] exceeded {timeout}s, terminating process...\n')
+                sys.stdout.flush()
+
+                proc.terminate()
+                try:
+                    rc = proc.wait(timeout=0.500)
+                    print(f'[timeout] rc={rc} process terminated gracefully')
+                except subprocess.TimeoutExpired:
+                    sys.stdout.write('[timeout] process did not terminate, killing process...\n')
+                    sys.stdout.flush()
+                    proc.kill()
+                    # wait for kill to take effect
+                    rc = proc.wait()
+                    rc_str = f'rc={rc}'
+                    sys.stdout.write(f'[timeout] {rc_str: <6} process forcefully killed\n')
+
+                sys.stdout.flush()
+                timed_out = True
+                # override rc since timeout is expected
+                rc = 0
+                break
+
+            time.sleep(0.1)  # Sleep to keep CPU usage low
+
+        t.join()
+        rc_str = f'rc={rc}'
+        if timed_out:
+            sys.stdout.write(f'[timeout] {rc_str: <6} process ended due to timeout\n')
+        else:
+            rc = proc.poll()
+            sys.stdout.write(f'[timeout] {rc_str: <6} process finished before timeout\n')
+        sys.stdout.flush()
+        return rc
+
+    # -------------------
     ## run a command in a subprocess
     #
     # @param cmd           the command to run
@@ -233,6 +309,7 @@ class PyOsal(metaclass=_PyOsalMeta):
     # @param print_cb      callback function used to print output; default is None
     # @param env           the environment variables to use
     # @param quiet         if True, do not write to stdout
+    # @param shared_container used by run_cmd_container to receive the proc value
     # @return rc - return code, lines - the output as a list of lines
     def run_cmd(  # pylint: disable=too-many-branches,too-many-statements
         self,
@@ -243,6 +320,7 @@ class PyOsal(metaclass=_PyOsalMeta):
         print_cb=None,
         env=None,
         quiet=False,
+        shared_container=None,
     ):  # pylint: disable=too-many-locals
         if not isinstance(cmd, list):
             self.abort('PyOsal: cmd must be a list')
@@ -283,33 +361,46 @@ class PyOsal(metaclass=_PyOsalMeta):
                 stderr=subprocess.STDOUT,
                 env=env,
             )
+            if shared_container is not None:
+                shared_container.append(proc)
         except Exception as excp:  # pylint: disable=broad-exception-caught
             err_type = excp.__class__.__name__
             line = f'EXCP pyosal.run_cmd: {err_type}: {excp}'
             self._save_line(line, lineno, lines, fp, print_cb, use_raw_log, quiet)
             return rc, lines
 
-        buffer = ''
+        # buffer contains the current set of bytes read from proc.stdout so far
+        buffer = b''
         while True:
             chunk = os.read(proc.stdout.fileno(), 256)
             if not chunk:
                 break
-            chunk_str = chunk.decode('utf-8', errors='replace')
-            chunk_str = chunk_str.replace('\r', '')
 
+            # uncomment to debug
             # for char in chunk:
             #     sys.stdout.write(f"'{char!r}': 0x{ord(char):02x}")
 
-            buffer += chunk_str
-            if '\n' not in buffer:
+            # append the current chunk
+            # Some apps use linefeeds to do "progress" lines (e.g. 10% 11% etc), so replace any linefeeds with nothing
+            buffer += chunk.replace(b'\r', b'')
+
+            # if there was a newline in the buffer, then we have at least a full line of characters
+            if b'\n' not in buffer:
                 continue
 
-            buff_lines = buffer.split('\n')
+            # split the buffer at the newline(s)
+            buff_lines = buffer.split(b'\n')
+            # save the remaining bytes in buffer
             buffer = buff_lines.pop()
 
-            for line in buff_lines:
+            # at this point buff_lines contains one or more lines (as bytes)
+            for line_bytes in buff_lines:
+                # convert the bytes to UTF-8 chars
+                line = line_bytes.decode('utf-8', errors='replace')
+
+                # uncomment to debug
                 # if not line.isprintable():
-                #     sys.stdout.write('has hex: ', ascii(line), '\n')
+                #     sys.stdout.write('has hex: ' + ascii(line) + '\n')
 
                 # check for exceptions and other script failures
                 if any(keyword in line for keyword in self._excp_keywords):
@@ -320,7 +411,7 @@ class PyOsal(metaclass=_PyOsalMeta):
                     sys.stdout.write(f'  -- {excp_msg}: "{line}"\n')
                     rc += 1
 
-                if 'DEPRECATE' in line:
+                if '!DEPRECATE!' in line:
                     dep_msg = '@@>>@@ Deprecation detected'
                     if dep_msg in line:
                         rc += 1
@@ -410,25 +501,26 @@ class PyOsal(metaclass=_PyOsalMeta):
             # skip empty lines
             return
 
-        # always save the line
+        # always save the line to the returned list
         lines.append(line)
-
-        if quiet:
-            # caller doesn't want it to stdout, fp or print_cb
-            return
 
         if use_raw_log:
             line_to_save = line
         else:
             line_to_save = f'  -- {line}'
         line_to_save = line_to_save.replace('←', '\x1b')
-        sys.stdout.write(line_to_save + '\n')
-        self.stdout_flush()
 
+        # quiet is used for stdout verbosity
+        if not quiet:
+            sys.stdout.write(line_to_save + '\n')
+            self.stdout_flush()
+
+        # fp is used for writing to the file or not
         if fp:
             fp.write(line_to_save)
             fp.write('\n')
 
+        # print_cb is used for writing to the callback or not
         if print_cb:
             print_cb(lineno, line)
 
