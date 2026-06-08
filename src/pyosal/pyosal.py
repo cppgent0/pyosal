@@ -7,6 +7,8 @@ import sys
 import threading
 import time
 
+import psutil
+
 
 # -------------------
 ## Meta class for pyosal; ensures it is a singleton
@@ -260,6 +262,8 @@ class PyOsal(metaclass=_PyOsalMeta):
 
         proc = shared_container[0]
         start_time = time.time()
+        # parent_pid = psutil.Process(proc.pid)
+        # pids = parent_pid.children(recursive=True)
 
         rc = 0
         timed_out = False
@@ -268,14 +272,23 @@ class PyOsal(metaclass=_PyOsalMeta):
                 sys.stdout.write(f'\n[timeout] exceeded {timeout}s, terminating process...\n')
                 sys.stdout.flush()
 
-                proc.terminate()
                 try:
-                    rc = proc.wait(timeout=0.500)
-                    print(f'[timeout] rc={rc} process terminated gracefully')
+                    self._kill_process_tree(proc.pid, 'terminate')
+
+                    # wait for the terminate to take effect
+                    try:
+                        rc = proc.wait(timeout=1.0)
+                    except subprocess.TimeoutExpired as excp:
+                        # Manually raise it to force execution into the hard-kill block
+                        raise subprocess.TimeoutExpired(proc.args, 1.0) from excp
+
+                    rc_str = f'rc={rc}'
+                    print(f'[timeout] {rc_str: <6} process terminated gracefully')
                 except subprocess.TimeoutExpired:
                     sys.stdout.write('[timeout] process did not terminate, killing process...\n')
                     sys.stdout.flush()
-                    proc.kill()
+                    self._kill_process_tree(proc.pid, 'kill')
+
                     # wait for kill to take effect
                     rc = proc.wait()
                     rc_str = f'rc={rc}'
@@ -298,6 +311,36 @@ class PyOsal(metaclass=_PyOsalMeta):
             sys.stdout.write(f'[timeout] {rc_str: <6} process finished before timeout\n')
         sys.stdout.flush()
         return rc
+
+    # -------------------
+    ## kill all processes for the gived parent pid
+    # @param ppid_num   the parent pid number
+    # @param action     if "kill", kills the processes, otherwise terminates the prcesses
+    # @return None
+    def _kill_process_tree(self, ppid_num, action):
+        try:
+            parent_pid = psutil.Process(ppid_num)
+            children = parent_pid.children(recursive=True)
+            for pid in children:
+                try:
+                    # print(f'HERE0 killing child: {pid}')
+                    if action == 'kill':
+                        pid.kill()
+                    else:
+                        pid.terminate()
+                except psutil.NoSuchProcess:
+                    # child processes may already be dead
+                    pass
+
+            # kill parent
+            # print(f'HERE0 killing parent: {parent_pid}')
+            if action == 'kill':
+                parent_pid.kill()
+            else:
+                parent_pid.terminate()
+        except psutil.NoSuchProcess:
+            # parent/child processes may already be dead
+            pass
 
     # -------------------
     ## run a command in a subprocess
@@ -360,6 +403,8 @@ class PyOsal(metaclass=_PyOsalMeta):
                 stdout=subprocess.PIPE,
                 stderr=subprocess.STDOUT,
                 env=env,
+                shell=False,
+                start_new_session=True,
             )
             if shared_container is not None:
                 shared_container.append(proc)
