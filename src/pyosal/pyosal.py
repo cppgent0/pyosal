@@ -161,7 +161,7 @@ class PyOsal(metaclass=_PyOsalMeta):
             self._root_dir = '~'
             self._root_dir_msys2 = self._root_dir
         else:
-            self.abort(f'PyOsal: unrecognized OS: "{sys.platform}"')
+            self.abort(f'PyOsal.set_all_data: unrecognized OS: "{sys.platform}"')
 
         ## holds python version e.g. "Python 3.10"
         self._python_version = f'Python {sys.version_info.major}.{sys.version_info.minor}'
@@ -249,7 +249,11 @@ class PyOsal(metaclass=_PyOsalMeta):
         env=None,
         quiet=False,
     ):  # pylint: disable=too-many-locals
-        # assume timeout is an integer
+        if not isinstance(timeout, int):
+            self.abort('PyOsal.run_cmd_timeout: timeout must be an integer')
+
+        if not isinstance(cmd, list):
+            self.abort('PyOsal.run_cmd_timeout: cmd must be a list')
 
         # Run your existing function in a background thread
         shared_container = []
@@ -320,7 +324,7 @@ class PyOsal(metaclass=_PyOsalMeta):
     def _kill_process_tree(self, ppid_num, action):
         try:
             parent_pid = psutil.Process(ppid_num)
-            children = parent_pid.children(recursive=True)
+            children = list(reversed(parent_pid.children(recursive=True)))
             for pid in children:
                 try:
                     # print(f'HERE0 killing child: {pid}')
@@ -331,6 +335,10 @@ class PyOsal(metaclass=_PyOsalMeta):
                 except psutil.NoSuchProcess:
                     # child processes may already be dead
                     pass
+                except psutil.AccessDenied:
+                    # If no permission to kill the root child, escalate the kill command using sudo
+                    cmd = ['sudo', 'kill', '-9' if action == 'kill' else '-15', str(pid.pid)]
+                    subprocess.run(cmd, check=False)
 
             # kill parent
             # print(f'HERE0 killing parent: {parent_pid}')
@@ -341,6 +349,9 @@ class PyOsal(metaclass=_PyOsalMeta):
         except psutil.NoSuchProcess:
             # parent/child processes may already be dead
             pass
+        except psutil.AccessDenied:
+            cmd = ['sudo', 'kill', '-9' if action == 'kill' else '-15', str(parent_pid.pid)]
+            subprocess.run(cmd, check=False)
 
     # -------------------
     ## run a command in a subprocess
@@ -366,7 +377,7 @@ class PyOsal(metaclass=_PyOsalMeta):
         shared_container=None,
     ):  # pylint: disable=too-many-locals
         if not isinstance(cmd, list):
-            self.abort('PyOsal: cmd must be a list')
+            self.abort('PyOsal.run_cmd: cmd must be a list')
 
         ## os_name: see above
         if self._os_name == 'msys2':
@@ -399,12 +410,12 @@ class PyOsal(metaclass=_PyOsalMeta):
                 universal_newlines=True,
                 errors='replace',
                 text=True,
-                stdin=subprocess.DEVNULL,
+                # stdin=subprocess.DEVNULL,
+                stdin=None,
                 stdout=subprocess.PIPE,
                 stderr=subprocess.STDOUT,
                 env=env,
                 shell=False,
-                start_new_session=True,
             )
             if shared_container is not None:
                 shared_container.append(proc)
@@ -659,7 +670,7 @@ class PyOsal(metaclass=_PyOsalMeta):
     # @return does not return
     def abort(self, msg='abort occurred, exiting'):
         sys.stdout.write('\n')
-        sys.stdout.write(f'ABRT {msg}')
+        sys.stdout.write(f'ABRT {msg}\n')
         self.stdout_flush()
         self.stderr_flush()
         sys.exit(1)

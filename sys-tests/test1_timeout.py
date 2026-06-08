@@ -6,6 +6,8 @@ scenario = 'normal'
 if len(sys.argv) > 1:
     scenario = sys.argv[1]
 
+gui = None
+
 if scenario == 'normal':
     print(f'running {scenario} scenario: app ends before timeout')
     timeout = 3
@@ -18,6 +20,12 @@ elif scenario == 'killed':
     print(f'running {scenario} scenario: app must be killed after terminated')
     timeout = 1
     exp_rc = 0
+elif scenario == 'gui':
+    if pyosal.os_name == 'ubuntu':
+        gui = ['gedit', 'out/abc.txt']
+    print(f'running {scenario} scenario: timeout is 3s but the app is gui: "{gui}"')
+    timeout = 3
+    exp_rc = 0
 elif scenario == 'bad1':
     print(f'running {scenario} scenario: timeout is 0s')
     timeout = 0
@@ -26,8 +34,13 @@ elif scenario == 'bad2':
     print(f'running {scenario} scenario: timeout is -1s')
     timeout = -1
     exp_rc = 0
+else:
+    pyosal.abort(f'unknown scenarion; "{scenario}"')
 
-cmd = [sys.executable, 'sys-tests/test1_timer.py', '2', scenario]
+if gui:
+    cmd = gui
+else:
+    cmd = [sys.executable, 'sys-tests/test1_timer.py', '2', scenario]
 
 rc = pyosal.run_cmd_timeout(timeout, cmd)
 print(f'expected rc={exp_rc} act rc={rc}')
