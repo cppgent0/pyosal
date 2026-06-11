@@ -604,6 +604,10 @@ class PyOsal(metaclass=_PyOsalMeta):
     # @param force   force the conversion no matter what the OS is
     # @return the unfixed path
     def xlat_to_win(self, path, force=False):
+        if not path:
+            # defensive. Should not occur
+            return None
+
         path = os.path.expanduser(path)
         if force or self._os_name == 'msys2':
             # assumes there is only one character and it is for a drive letter
@@ -622,6 +626,10 @@ class PyOsal(metaclass=_PyOsalMeta):
     # @param force   force the conversion no matter what the OS is
     # @return the unfixed path
     def xlat_to_posix(self, path, force=False):
+        if not path:
+            # defensive. Should not occur
+            return None
+
         path = os.path.expanduser(path)
         if force or self._os_name == 'msys2':
             m = re.search(r'^(.):(.*)', path)
@@ -637,6 +645,10 @@ class PyOsal(metaclass=_PyOsalMeta):
     # @param path    the path to fix
     # @return the relative path
     def xlat_dir_to_relative(self, path):
+        if not path:
+            # defensive. Should not occur
+            return None
+
         path = self.xlat_to_posix(path)
         path = path.replace(self.xlat_to_posix(os.path.expanduser('~')), '~')
         path = path.replace('\\', '/')
