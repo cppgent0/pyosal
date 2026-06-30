@@ -267,7 +267,6 @@ class PyOsal(metaclass=_PyOsalMeta):
             time.sleep(0.01)
         start_time = time.time()
 
-        shared_container['found_pid'] = False  # only used by MSYS2
         # uncomment to debug
         # cmd_str = ' '.join(shared_container['cmd'][2:])
         # print(f'run_cmd_timeout: ppid={shared_container["pids"]} cmd="{cmd_str}"')
@@ -361,16 +360,6 @@ class PyOsal(metaclass=_PyOsalMeta):
     #          'cmd-dead' when the process has died,
     #          'cmd-running' when the process is still running and timeout has not been
     def _check_timer_msys2(self, shared_container, msys_tag):
-        # if shared_container['found_pid']:
-        #     # uncomment to debug
-        #     print(f'check_timer_msys2: found_pid pids:{shared_container["pids"]}')
-        #     # if any are running, the cmd is running
-        #     for pid in shared_container['pids']:
-        #         if psutil.pid_exists(pid):
-        #             return 'cmd-running'
-
-        #     return 'cmd-dead'
-
         process_list = []
         # psutil.process_iter fetches all running processes efficiently in a single sweep
         for proc in psutil.process_iter(['pid', 'name', 'cmdline']):
@@ -418,7 +407,6 @@ class PyOsal(metaclass=_PyOsalMeta):
                 state_pid = info['PID']
                 if state_pid not in shared_container['pids']:
                     shared_container['pids'].append(state_pid)
-                shared_container['found_pid'] = True
 
             if pfx == '**':
                 # uncomment to debug
