@@ -267,10 +267,10 @@ class PyOsal(metaclass=_PyOsalMeta):
             time.sleep(0.01)
         start_time = time.time()
 
-        cmd_str = ' '.join(shared_container['cmd'][2:])
-        ppid_num = shared_container['ppid']
         shared_container['found_pid'] = False  # only used by MSYS2
-        print(f'HERE2 ppid={ppid_num} cmd="{cmd_str}"')
+        # uncomment to debug
+        # cmd_str = ' '.join(shared_container['cmd'][2:])
+        # print(f'run_cmd_timeout: ppid={shared_container["pids"]} cmd="{cmd_str}"')
 
         rc = 0
         timed_out = False
@@ -336,11 +336,11 @@ class PyOsal(metaclass=_PyOsalMeta):
     def _check_timer(self, thread_ptr, start_time, timeout, shared_container, msys_tag):
         elapsed = time.time() - start_time
         if elapsed > timeout:
-            print('timer_expired')
             return 'timer_expired'
 
         if self._os_name == 'msys2':
-            return self._check_timer_msys2(elapsed, shared_container, msys_tag)
+            # print(f'check_timer_msys2:  {round(elapsed, 1)} {round(time.time(), 1)} ==================================')
+            return self._check_timer_msys2(shared_container, msys_tag)
 
         # handle macos and ubuntu
         if not thread_ptr.is_alive():
@@ -355,34 +355,28 @@ class PyOsal(metaclass=_PyOsalMeta):
     # the initial msys2 thread will immediately die
     # so the current processes running
     #
-    # @param elapsed          current elapsed time since the bg thread was started
     # @param shared_container used by run_cmd_container to receive the proc value
     # @param msys_tag         used only for MSYS2 processes; matches command line content for PID to kill
     # @return 'timer_expired' when the exptected timeout has been reached,
     #          'cmd-dead' when the process has died,
     #          'cmd-running' when the process is still running and timeout has not been
-    def _check_timer_msys2(self, elapsed, shared_container, msys_tag):
+    def _check_timer_msys2(self, shared_container, msys_tag):
+        # if shared_container['found_pid']:
+        #     # uncomment to debug
+        #     print(f'check_timer_msys2: found_pid pids:{shared_container["pids"]}')
+        #     # if any are running, the cmd is running
+        #     for pid in shared_container['pids']:
+        #         if psutil.pid_exists(pid):
+        #             return 'cmd-running'
 
-        if shared_container['found_pid']:
-            print(f'@@ HERE1  {round(elapsed, 1)} {round(time.time(), 1)} ==================================')
-            print(f'@@ HERE1 ppid:{shared_container["ppid"]}')
-            if psutil.pid_exists(shared_container['ppid']):
-                print('@@ HERE1 still running')
-                return 'cmd-running'
+        #     return 'cmd-dead'
 
-            print('@@ HERE1 dead?')
-            return 'cmd-dead'
-
-        print(f'@@ BEFORE {round(elapsed, 1)} {round(time.time(), 1)} ==================================')
         process_list = []
         # psutil.process_iter fetches all running processes efficiently in a single sweep
-        # for proc in psutil.process_iter(['pid', 'ppid', 'name', 'cmdline']):
         for proc in psutil.process_iter(['pid', 'name', 'cmdline']):
             try:
                 info = proc.info
                 cmdline_str = ' '.join(info['cmdline']) if info['cmdline'] else ''
-
-                # process_list.append({'PID': info['pid'], 'PPID': info['ppid'], 'Name': info['name'], 'CommandLine': cmdline_str})
                 process_list.append({'PID': info['pid'], 'Name': info['name'], 'CommandLine': cmdline_str})
             except (psutil.NoSuchProcess, psutil.AccessDenied, psutil.ZombieProcess):
                 # skip processes that die mid-flight or reject access permissions
@@ -390,8 +384,10 @@ class PyOsal(metaclass=_PyOsalMeta):
 
         state = 'cmd-dead'
         state_pid = 0
-        # for info in process_list:
+        # search for command match in PID sorted order.
+        # This will find the most recent process last
         for info in sorted(process_list, key=lambda x: x['PID']):
+            # skip lines with missing data or irrelevant processes
             if info['CommandLine'] is None:
                 continue
             if info['Name'] in [
@@ -409,24 +405,26 @@ class PyOsal(metaclass=_PyOsalMeta):
                 'OpenConsole.exe',
             ]:
                 continue
+
             if not isinstance(info['PID'], int):
                 info['PID'] = int(info['PID'])
 
-            cmd_line = info['CommandLine']
+            # capitalization is not relevant
+            cmd_line = info['CommandLine'].lower()
             pfx = '  '
-            if info['PID'] > state_pid and msys_tag.lower() in info['CommandLine'].lower():
-                # print(f'w:**{info["PID"]: <5} {info["Name"]: <20} {cmd_line}')
+            if msys_tag.lower() in cmd_line:
                 pfx = '**'
                 state = 'cmd-running'
                 state_pid = info['PID']
-                shared_container['ppid'] = state_pid
+                if state_pid not in shared_container['pids']:
+                    shared_container['pids'].append(state_pid)
                 shared_container['found_pid'] = True
-            elif msys_tag.lower() in info['CommandLine'].lower():
-                pfx = '**'
 
             if pfx == '**':
-                # print(f'w:{pfx}{info["PID"]: <5} {info["PPID"]: <5} {info["Name"]: <20} {cmd_line}')
-                print(f'w:{pfx}{info["PID"]: <5} {info["Name"]: <20} {cmd_line}')
+                # uncomment to debug
+                # print(f'w:{pfx}{info["PID"]: <5} {info["Name"]: <20} {cmd_line}')
+                pass
+
         sys.stdout.flush()
         return state
 
@@ -451,14 +449,17 @@ class PyOsal(metaclass=_PyOsalMeta):
     def _kill_msys2_process_tree(self, shared_container):
         rc = 0
         print('[timeout] MSYS2 detected...')
-        cmd_str = ' '.join(shared_container['cmd'][2:])
-        ppid_num = shared_container['ppid']
-        print(f'HERE2 ppid={ppid_num} cmd="{cmd_str}"')
+        # uncomment to debug
+        # cmd_str = ' '.join(shared_container['cmd'][2:])
+        # print(f'_kill_msys2_process_tree: pids={shared_container["pids"]} cmd="{cmd_str}"')
 
-        import signal
-
-        os.kill(ppid_num, signal.SIGTERM)
-        time.sleep(0.010)
+        for pid in shared_container['pids']:
+            if not psutil.pid_exists(pid):
+                continue
+            proc = psutil.Process(pid)
+            # terminate does not work in windows
+            proc.kill()
+            time.sleep(0.010)
         return rc
 
     # -------------------
@@ -469,7 +470,7 @@ class PyOsal(metaclass=_PyOsalMeta):
     # @return the return code
     def _kill_posix_process_tree(self, shared_container, action):
         proc = shared_container['proc']
-        ppid_num = shared_container['ppid']
+        ppid_num = shared_container['pids'][0]
         rc = 0
         try:
             parent_pid = psutil.Process(ppid_num)
@@ -503,11 +504,10 @@ class PyOsal(metaclass=_PyOsalMeta):
     ## kill a POSIX process
     # @param pid       the process id to kill
     # @param action    "terminate" to ask process to terminate itself.
-    #                  "kill" to terminate the process externally
+    #                         "kill" to terminate the process externally
     # @return None
     def _kill_process(self, pid, action):
         try:
-            # print(f'HERE0 killing: {pid}')
             if action == 'kill':
                 pid.kill()
             else:
@@ -592,7 +592,7 @@ class PyOsal(metaclass=_PyOsalMeta):
 
         if shared_container is not None:
             shared_container['proc'] = proc
-            shared_container['ppid'] = proc.pid
+            shared_container['pids'] = [proc.pid]
             shared_container['cmd'] = cmd
 
         # buffer contains the current set of bytes read from proc.stdout so far
