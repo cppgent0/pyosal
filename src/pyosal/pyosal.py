@@ -237,6 +237,7 @@ class PyOsal(metaclass=_PyOsalMeta):
     # @param print_cb      callback function used to print output; default is None
     # @param env           the environment variables to use
     # @param quiet         if True, do not write to stdout
+    # @param msys_tag      used only for MSYS2 processes; matches command line content for PID to kill
     # @return rc - return code, lines - the output as a list of lines
     def run_cmd_timeout(
         self,
@@ -248,6 +249,7 @@ class PyOsal(metaclass=_PyOsalMeta):
         print_cb=None,
         env=None,
         quiet=False,
+        msys_tag='NOTEPAD',
     ):  # pylint: disable=too-many-locals
         if not isinstance(timeout, int):
             self.abort('PyOsal.run_cmd_timeout: timeout must be an integer')
@@ -256,101 +258,266 @@ class PyOsal(metaclass=_PyOsalMeta):
             self.abort('PyOsal.run_cmd_timeout: cmd must be a list')
 
         # Run your existing function in a background thread
-        shared_container = []
+        shared_container = {}
         t = threading.Thread(target=self.run_cmd, args=(cmd, working_dir, use_raw_log, log_file, print_cb, env, quiet, shared_container))
         t.start()
 
         # Wait briefly for the subprocess to actually initialize and populate the container
         while not shared_container:
             time.sleep(0.01)
-
-        proc = shared_container[0]
         start_time = time.time()
-        # parent_pid = psutil.Process(proc.pid)
-        # pids = parent_pid.children(recursive=True)
+
+        cmd_str = ' '.join(shared_container['cmd'][2:])
+        ppid_num = shared_container['ppid']
+        shared_container['found_pid'] = False  # only used by MSYS2
+        print(f'HERE2 ppid={ppid_num} cmd="{cmd_str}"')
 
         rc = 0
         timed_out = False
-        while t.is_alive():
-            if (time.time() - start_time) > timeout:
-                sys.stdout.write(f'\n[timeout] exceeded {timeout}s, terminating process...\n')
-                sys.stdout.flush()
-
-                try:
-                    self._kill_process_tree(proc.pid, 'terminate')
-
-                    # wait for the terminate to take effect
-                    try:
-                        rc = proc.wait(timeout=1.0)
-                    except subprocess.TimeoutExpired as excp:
-                        # Manually raise it to force execution into the hard-kill block
-                        raise subprocess.TimeoutExpired(proc.args, 1.0) from excp
-
-                    rc_str = f'rc={rc}'
-                    print(f'[timeout] {rc_str: <6} process terminated gracefully')
-                except subprocess.TimeoutExpired:
-                    sys.stdout.write('[timeout] process did not terminate, killing process...\n')
-                    sys.stdout.flush()
-                    self._kill_process_tree(proc.pid, 'kill')
-
-                    # wait for kill to take effect
-                    rc = proc.wait()
-                    rc_str = f'rc={rc}'
-                    sys.stdout.write(f'[timeout] {rc_str: <6} process forcefully killed\n')
-
-                sys.stdout.flush()
-                timed_out = True
-                # override rc since timeout is expected
-                rc = 0
+        state = 'start'
+        while True:
+            # wait here so that the bash terminal in MSYS2 can end
+            time.sleep(0.3)
+            state = self._check_timer(t, start_time, timeout, shared_container, msys_tag)
+            if state in ['cmd-dead', 'timer_expired']:
                 break
 
-            time.sleep(0.1)  # Sleep to keep CPU usage low
+            # at this point: command is still running
+
+        if state == 'timer_expired':
+            self._check_processes(timeout, shared_container)
+            timed_out = True
+            rc = 0  # override rc since timeout is expected
 
         t.join()
         rc_str = f'rc={rc}'
         if timed_out:
             sys.stdout.write(f'[timeout] {rc_str: <6} process ended due to timeout\n')
         else:
-            rc = proc.poll()
+            rc = shared_container['proc'].poll()
             sys.stdout.write(f'[timeout] {rc_str: <6} process finished before timeout\n')
         sys.stdout.flush()
         return rc
 
     # -------------------
+    ## terminate/kill processes in the tree
+    #
+    # @param timeout       (integer) max time to run cmd before terminating/killing the process
+    # @param shared_container used by run_cmd_container to receive the proc value
+    # @return None
+    def _check_processes(self, timeout, shared_container):
+        sys.stdout.write(f'\n[timeout] exceeded {timeout}s, terminating process...\n')
+        sys.stdout.flush()
+
+        try:
+            rc = self._kill_process_tree(shared_container, 'terminate')
+            rc_str = f'rc={rc}'
+            print(f'[timeout] {rc_str: <6} process terminated gracefully')
+        except subprocess.TimeoutExpired:
+            sys.stdout.write('[timeout] process did not terminate, killing process...\n')
+            sys.stdout.flush()
+            rc = self._kill_process_tree(shared_container, 'kill')
+            rc_str = f'rc={rc}'
+            sys.stdout.write(f'[timeout] {rc_str: <6} process forcefully killed\n')
+
+        sys.stdout.flush()
+
+    # -------------------
+    ## check if timer has expired and if so terminate/kill the process
+    #
+    # @param thread_ptr       the bg thread running the sleep/wait
+    # @param start_time       the time the bg thread started
+    # @param timeout          the max time the thread should run
+    # @param shared_container used by run_cmd_container to receive the proc value
+    # @param msys_tag         used only for MSYS2 processes; matches command line content for PID to kill
+    # @return 'timer_expired' when the exptected timeout has been reached,
+    #          'cmd-dead' when the process has died,
+    #          'cmd-running' when the process is still running and timeout has not been
+    def _check_timer(self, thread_ptr, start_time, timeout, shared_container, msys_tag):
+        elapsed = time.time() - start_time
+        if elapsed > timeout:
+            print('timer_expired')
+            return 'timer_expired'
+
+        if self._os_name == 'msys2':
+            return self._check_timer_msys2(elapsed, shared_container, msys_tag)
+
+        # handle macos and ubuntu
+        if not thread_ptr.is_alive():
+            return 'cmd-dead'
+        return 'cmd-running'
+
+    # -------------------
+    ## for MSYS2: check the process is still running.
+    # in MSYS2: parent_pid.children() does not work as it does in POSIX systems.
+    # this is a hack to get the correct PID for killing
+    # at this point: in msys2 session and timer has not expired
+    # the initial msys2 thread will immediately die
+    # so the current processes running
+    #
+    # @param elapsed          current elapsed time since the bg thread was started
+    # @param shared_container used by run_cmd_container to receive the proc value
+    # @param msys_tag         used only for MSYS2 processes; matches command line content for PID to kill
+    # @return 'timer_expired' when the exptected timeout has been reached,
+    #          'cmd-dead' when the process has died,
+    #          'cmd-running' when the process is still running and timeout has not been
+    def _check_timer_msys2(self, elapsed, shared_container, msys_tag):
+
+        if shared_container['found_pid']:
+            print(f'@@ HERE1  {round(elapsed, 1)} {round(time.time(), 1)} ==================================')
+            print(f'@@ HERE1 ppid:{shared_container["ppid"]}')
+            if psutil.pid_exists(shared_container['ppid']):
+                print('@@ HERE1 still running')
+                return 'cmd-running'
+
+            print('@@ HERE1 dead?')
+            return 'cmd-dead'
+
+        print(f'@@ BEFORE {round(elapsed, 1)} {round(time.time(), 1)} ==================================')
+        process_list = []
+        # psutil.process_iter fetches all running processes efficiently in a single sweep
+        # for proc in psutil.process_iter(['pid', 'ppid', 'name', 'cmdline']):
+        for proc in psutil.process_iter(['pid', 'name', 'cmdline']):
+            try:
+                info = proc.info
+                cmdline_str = ' '.join(info['cmdline']) if info['cmdline'] else ''
+
+                # process_list.append({'PID': info['pid'], 'PPID': info['ppid'], 'Name': info['name'], 'CommandLine': cmdline_str})
+                process_list.append({'PID': info['pid'], 'Name': info['name'], 'CommandLine': cmdline_str})
+            except (psutil.NoSuchProcess, psutil.AccessDenied, psutil.ZombieProcess):
+                # skip processes that die mid-flight or reject access permissions
+                pass
+
+        state = 'cmd-dead'
+        state_pid = 0
+        # for info in process_list:
+        for info in sorted(process_list, key=lambda x: x['PID']):
+            if info['CommandLine'] is None:
+                continue
+            if info['Name'] in [
+                'backgroundTaskHost.exe',
+                'conhost.exe',
+                'Code.exe',
+                'dllhost.exe',
+                'dasHost.exe',
+                'FileCoAuth.exe',
+                'RuntimeBroker.exe',
+                'svchost.exe',
+                'SystemSettings.exe',
+                'SystemOptimizer.exe',
+                'OneDrive.exe',
+                'OpenConsole.exe',
+            ]:
+                continue
+            if not isinstance(info['PID'], int):
+                info['PID'] = int(info['PID'])
+
+            cmd_line = info['CommandLine']
+            pfx = '  '
+            if info['PID'] > state_pid and msys_tag.lower() in info['CommandLine'].lower():
+                # print(f'w:**{info["PID"]: <5} {info["Name"]: <20} {cmd_line}')
+                pfx = '**'
+                state = 'cmd-running'
+                state_pid = info['PID']
+                shared_container['ppid'] = state_pid
+                shared_container['found_pid'] = True
+            elif msys_tag.lower() in info['CommandLine'].lower():
+                pfx = '**'
+
+            if pfx == '**':
+                # print(f'w:{pfx}{info["PID"]: <5} {info["PPID"]: <5} {info["Name"]: <20} {cmd_line}')
+                print(f'w:{pfx}{info["PID"]: <5} {info["Name"]: <20} {cmd_line}')
+        sys.stdout.flush()
+        return state
+
+    # -------------------
     ## kill all processes for the gived parent pid
-    # @param ppid_num   the parent pid number
+    # @param shared_container used by run_cmd_container to receive the proc value
     # @param action     if "kill", kills the processes, otherwise terminates the prcesses
     # @return None
-    def _kill_process_tree(self, ppid_num, action):
+    def _kill_process_tree(self, shared_container, action):
+        if self._os_name in ['msys2']:
+            rc = self._kill_msys2_process_tree(shared_container)
+        else:  # macos and ubuntu
+            rc = self._kill_posix_process_tree(shared_container, action)
+        return rc
+
+    # -------------------
+    ## kill the MSYS2 process.
+    # Note there is no equivalent of "terminate" in MSYS2/windows
+    #
+    # @param shared_container used by run_cmd_container to receive the proc value
+    # @return the return code
+    def _kill_msys2_process_tree(self, shared_container):
+        rc = 0
+        print('[timeout] MSYS2 detected...')
+        cmd_str = ' '.join(shared_container['cmd'][2:])
+        ppid_num = shared_container['ppid']
+        print(f'HERE2 ppid={ppid_num} cmd="{cmd_str}"')
+
+        import signal
+
+        os.kill(ppid_num, signal.SIGTERM)
+        time.sleep(0.010)
+        return rc
+
+    # -------------------
+    ## kill the process tree
+    # @param shared_container used by run_cmd_container to receive the proc value
+    # @param action           "terminate" to ask process to terminate itself.
+    #                         "kill" to terminate the process externally
+    # @return the return code
+    def _kill_posix_process_tree(self, shared_container, action):
+        proc = shared_container['proc']
+        ppid_num = shared_container['ppid']
+        rc = 0
         try:
             parent_pid = psutil.Process(ppid_num)
             children = list(reversed(parent_pid.children(recursive=True)))
+
+            # kill children first
             for pid in children:
-                try:
-                    # print(f'HERE0 killing child: {pid}')
-                    if action == 'kill':
-                        pid.kill()
-                    else:
-                        pid.terminate()
-                except psutil.NoSuchProcess:
-                    # child processes may already be dead
-                    pass
-                except psutil.AccessDenied:
-                    # If no permission to kill the root child, escalate the kill command using sudo
-                    cmd = ['sudo', 'kill', '-9' if action == 'kill' else '-15', str(pid.pid)]
-                    subprocess.run(cmd, check=False)
+                self._kill_process(pid, action)
 
             # kill parent
-            # print(f'HERE0 killing parent: {parent_pid}')
-            if action == 'kill':
-                parent_pid.kill()
-            else:
-                parent_pid.terminate()
+            self._kill_process(parent_pid, action)
         except psutil.NoSuchProcess:
             # parent/child processes may already be dead
             pass
         except psutil.AccessDenied:
             cmd = ['sudo', 'kill', '-9' if action == 'kill' else '-15', str(parent_pid.pid)]
+            subprocess.run(cmd, check=False)
+
+        # wait for the terminate to take effect
+        if action == 'terminate':
+            try:
+                rc = proc.wait(timeout=1.0)
+            except subprocess.TimeoutExpired as excp:
+                # Manually raise it to force execution into the hard-kill block
+                raise subprocess.TimeoutExpired(proc.args, 1.0) from excp
+        else:
+            rc = proc.wait()
+        return rc
+
+    # -------------------
+    ## kill a POSIX process
+    # @param pid       the process id to kill
+    # @param action    "terminate" to ask process to terminate itself.
+    #                  "kill" to terminate the process externally
+    # @return None
+    def _kill_process(self, pid, action):
+        try:
+            # print(f'HERE0 killing: {pid}')
+            if action == 'kill':
+                pid.kill()
+            else:
+                pid.terminate()
+        except psutil.NoSuchProcess:
+            # child processes may already be dead
+            pass
+        except psutil.AccessDenied:
+            # If no permission to kill the root child, escalate the kill command using sudo
+            cmd = ['sudo', 'kill', '-9' if action == 'kill' else '-15', str(pid.pid)]
             subprocess.run(cmd, check=False)
 
     # -------------------
@@ -417,13 +584,16 @@ class PyOsal(metaclass=_PyOsalMeta):
                 env=env,
                 shell=False,
             )
-            if shared_container is not None:
-                shared_container.append(proc)
         except Exception as excp:  # pylint: disable=broad-exception-caught
             err_type = excp.__class__.__name__
             line = f'EXCP pyosal.run_cmd: {err_type}: {excp}'
             self._save_line(line, lineno, lines, fp, print_cb, use_raw_log, quiet)
             return rc, lines
+
+        if shared_container is not None:
+            shared_container['proc'] = proc
+            shared_container['ppid'] = proc.pid
+            shared_container['cmd'] = cmd
 
         # buffer contains the current set of bytes read from proc.stdout so far
         buffer = b''

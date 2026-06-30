@@ -15,9 +15,9 @@ def handle_sigterm(signum, frame):
     raise GracefulShutdown('Received SIGTERM from parent process')
 
 
-# 3. Register the handler at the very start of your app
 if not hasattr(signal, 'SIGTERM'):
     print('HUH!! NO SIGTERM')
+    sys.stdout.flush()
 
 signal.signal(signal.SIGTERM, handle_sigterm)
 
