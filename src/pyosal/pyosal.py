@@ -63,6 +63,8 @@ class PyOsal(metaclass=_PyOsalMeta):
         self._hostname: str = None
         ## list of valid OS
         self._os_valid = ['ubuntu', 'macos', 'msys2', 'psi', 'rpi']
+        ## for debug
+        self._debug = set()
 
         # === UT related
 
@@ -74,6 +76,17 @@ class PyOsal(metaclass=_PyOsalMeta):
         # === initialize
         self._get_os_name()
         self._set_all_data()
+
+    # -------------------
+    ## set debug to print extra info.
+    # * set()         : turn off debugging
+    # * {'timed'}     : print()'s for run_cmd_timed
+    # * {'run'}       : print()'s for run_cmd
+    # * {'run', 'timed'} : for both
+    # @param val   the debug level to use
+    # @return Noen
+    def set_debug(self, val: set):
+        self._debug = set(val)
 
     # -------------------
     ## get OS name/tag
@@ -267,9 +280,9 @@ class PyOsal(metaclass=_PyOsalMeta):
             time.sleep(0.01)
         start_time = time.time()
 
-        # uncomment to debug
-        # cmd_str = ' '.join(shared_container['cmd'][2:])
-        # print(f'run_cmd_timeout: ppid={shared_container["pids"]} cmd="{cmd_str}"')
+        if 'timed' in self._debug:
+            cmd_str = ' '.join(shared_container['cmd'][2:])
+            print(f'pyosal.run_cmd_timeout: pids={shared_container["pids"]} cmd="{cmd_str}"')
 
         rc = 0
         timed_out = False
@@ -338,7 +351,8 @@ class PyOsal(metaclass=_PyOsalMeta):
             return 'timer_expired'
 
         if self._os_name == 'msys2':
-            # print(f'check_timer_msys2:  {round(elapsed, 1)} {round(time.time(), 1)} ==================================')
+            if 'timed' in self._debug:
+                print(f'pyosal.check_timer_msys2:  {round(elapsed, 1)} {round(time.time(), 1)} ==================================')
             return self._check_timer_msys2(shared_container, msys_tag)
 
         # handle macos and ubuntu
@@ -371,7 +385,7 @@ class PyOsal(metaclass=_PyOsalMeta):
                 # skip processes that die mid-flight or reject access permissions
                 pass
 
-        state = 'cmd-dead'
+        state = 'cmd-not-found'
         state_pid = 0
         # search for command match in PID sorted order.
         # This will find the most recent process last
@@ -408,10 +422,15 @@ class PyOsal(metaclass=_PyOsalMeta):
                 if state_pid not in shared_container['pids']:
                     shared_container['pids'].append(state_pid)
 
-            if pfx == '**':
-                # uncomment to debug
-                # print(f'w:{pfx}{info["PID"]: <5} {info["Name"]: <20} {cmd_line}')
-                pass
+            if pfx == '**' and 'timed' in self._debug:
+                print(f'w:{pfx}{info["PID"]: <5} {info["Name"]: <20} {cmd_line}')
+
+        if shared_container['state'] == 'cmd-not-found' and state == 'cmd-running':
+            shared_container['state'] = 'cmd-running'
+        elif shared_container['state'] == 'cmd-running' and state == 'cmd-not-found':
+            shared_container['state'] = 'cmd-dead'
+        elif 'timed' in self._debug:
+            print(f'pyosal.check_timer_msys2: state:{state} shared:{shared_container["state"]}')
 
         sys.stdout.flush()
         return state
@@ -437,9 +456,9 @@ class PyOsal(metaclass=_PyOsalMeta):
     def _kill_msys2_process_tree(self, shared_container):
         rc = 0
         print('[timeout] MSYS2 detected...')
-        # uncomment to debug
-        # cmd_str = ' '.join(shared_container['cmd'][2:])
-        # print(f'_kill_msys2_process_tree: pids={shared_container["pids"]} cmd="{cmd_str}"')
+        if 'timer' in self._debug:
+            cmd_str = ' '.join(shared_container['cmd'][2:])
+            print(f'pyosal._kill_msys2_process_tree: pids={shared_container["pids"]} cmd="{cmd_str}"')
 
         for pid in shared_container['pids']:
             if not psutil.pid_exists(pid):
@@ -582,6 +601,7 @@ class PyOsal(metaclass=_PyOsalMeta):
             shared_container['proc'] = proc
             shared_container['pids'] = [proc.pid]
             shared_container['cmd'] = cmd
+            shared_container['state'] = 'cmd-not-found'
 
         # buffer contains the current set of bytes read from proc.stdout so far
         buffer = b''
@@ -589,10 +609,6 @@ class PyOsal(metaclass=_PyOsalMeta):
             chunk = os.read(proc.stdout.fileno(), 256)
             if not chunk:
                 break
-
-            # uncomment to debug
-            # for char in chunk:
-            #     sys.stdout.write(f"'{char!r}': 0x{ord(char):02x}")
 
             # append the current chunk
             # Some apps use linefeeds to do "progress" lines (e.g. 10% 11% etc), so replace any linefeeds with nothing
@@ -612,9 +628,9 @@ class PyOsal(metaclass=_PyOsalMeta):
                 # convert the bytes to UTF-8 chars
                 line = line_bytes.decode('utf-8', errors='replace')
 
-                # uncomment to debug
-                # if not line.isprintable():
-                #     sys.stdout.write('has hex: ' + ascii(line) + '\n')
+                if 'run' in self._debug:
+                    if not line.isprintable():
+                        sys.stdout.write('has hex: ' + ascii(line) + '\n')
 
                 # check for exceptions and other script failures
                 if any(keyword in line for keyword in self._excp_keywords):
