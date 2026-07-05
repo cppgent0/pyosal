@@ -660,9 +660,10 @@ class PyOsal(metaclass=_PyOsalMeta):
 
         # at this point: chunk was empty
         if len(buffer) > 0:
-            buff_lines = buffer.split('\n')
-            for line in buff_lines:
+            buff_lines = buffer.split(b'\n')
+            for line_bytes in buff_lines:
                 lineno += 1
+                line = line_bytes.decode('utf-8', errors='replace')
                 self._save_line(line, lineno, lines, fp, print_cb, use_raw_log, quiet)
 
         if fp:
