@@ -1,6 +1,4 @@
 #! /usr/bin/env bash
-export tag="zpm_install_extra_ubu"
-
-echo
-printf "%-4s %-8s %s\n" "====" "starting:" "$tag"
-printf "%-4s %s\n" "" "no additional components needed"
+# shellcheck disable=SC1091
+source tools/xplat_utils/install/install-common.sh
+log_line "no additional components needed"

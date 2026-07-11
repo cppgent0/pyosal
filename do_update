@@ -9,7 +9,7 @@ source tools/zpm_env quiet
 # $pyexe -m pip install --config-settings editable_mode=compat ~/projects/web/py-mods/falcon-logger
 # TODO add here as necessary
 
-# proj ok:
+# repo ok:
 # for testing:
 #   go to tools/pyproject_template.toml; uncomment line: "Private :: Do Not Upload"
 #   go to tools/requirements.txt; uncomment pyosal line

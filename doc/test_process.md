@@ -85,7 +85,7 @@ Run the following in order:
 1. **run verification**
 
     ```bash
-    zpm ver   # currently unimplemented
+    zpm ver   # must be done first to clear coverage
     zpm ut
     ```
 
