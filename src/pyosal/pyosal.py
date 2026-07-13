@@ -303,7 +303,9 @@ class PyOsal(metaclass=_PyOsalMeta):
 
         t.join()
         rc_str = f'rc={rc}'
-        if timed_out:
+        if shared_container['proc'] is None:
+            sys.stdout.write(f'[timeout] {rc_str: <6} process ended due to exception\n')
+        elif timed_out:
             sys.stdout.write(f'[timeout] {rc_str: <6} process ended due to timeout\n')
         else:
             rc = shared_container['proc'].poll()
@@ -592,9 +594,16 @@ class PyOsal(metaclass=_PyOsalMeta):
                 shell=False,
             )
         except Exception as excp:  # pylint: disable=broad-exception-caught
+            rc += 1
             err_type = excp.__class__.__name__
-            line = f'EXCP pyosal.run_cmd: {err_type}: {excp}'
+            line = f'EXCP pyosal.run_cmd: rc:{rc} {err_type}: {excp}'
             self._save_line(line, lineno, lines, fp, print_cb, use_raw_log, quiet)
+            # indicate to callers that there is no proc
+            if shared_container is not None:
+                shared_container['proc'] = None
+                shared_container['pids'] = []
+                shared_container['cmd'] = cmd
+                shared_container['state'] = 'cmd-not-found'
             return rc, lines
 
         if shared_container is not None:
