@@ -110,6 +110,7 @@ function set_params {
 
 # --------------------
 function create_cmn_dir {
+  mkdir -p tools
   if [[ ! -d $XP_CMN_MAIN_DIR ]]; then
     mkdir -p "$XP_CMN_MAIN_DIR"
     log_check "mkdir main_dir"
@@ -195,8 +196,10 @@ function set_simlink {
     # windows: mklink /D ".\tools\xplat_utils" "C:\Users\arrizza\.local\share\xplat-common\xplat-utils"
   else
     # UNIX (Ubuntu/macOS): Standard ln command
-    if [[ ! -L "$XPLAT_LOCAL_DIR" ]]; then
-      log_note "not a link: $XPLAT_LOCAL_DIR, deleting it"
+    if [[ ! -d "$XPLAT_LOCAL_DIR" ]]; then
+      log_note "$XPLAT_LOCAL_DIR doesn't exist, creating it"
+    elif [[ ! -L "$XPLAT_LOCAL_DIR" ]]; then
+      log_note "not a link: $XPLAT_LOCAL_DIR or doesn't exist, deleting it"
       rm -rf $XPLAT_LOCAL_DIR
       # fix git status
       git rm -r --cached $XPLAT_LOCAL_DIR
@@ -216,6 +219,7 @@ function xplat_install {
   clone_xplat
   update_xplat
   set_simlink
+  tools/xplat_utils/install/do_install_zpm
   tools/xplat_utils/install/do_install_basic
 
   cp "$XP_LOCAL_MAIN" "$XP_CMN_MAIN"
@@ -223,6 +227,7 @@ function xplat_install {
 
 # --------------------
 function double_check {
+  mkdir -p tools
   if [[ ! -d $XP_CMN_MAIN_DIR ]]; then
     log_warn "$XP_CMN_MAIN_DIR does not exist; run \"$XP_LOCAL_MAIN xplat-install\""
     exit 1
