@@ -213,6 +213,31 @@ see ```sample/app.py``` for sample code.
 
 * **Returns:** rc - return code, lines - the output as a list of lines
 
+* Sample code:
+
+    ```python
+    timeout = 3  # seconds
+    msys_tag = None
+    if pyosal.os_name == 'ubuntu':
+        cmd = ['gedit', 'out/abc.txt']
+    elif pyosal.os_name == 'msys2':
+        cmd = ['notepad']
+        msys_tag = 'notepad.exe'
+    # TODO need macOS test
+    pyosal.run_cmd_timeout(timeout, cmd, msys_tag=msys_tag)
+    ```
+
+* Output:
+
+    ```text
+    # on ubuntu: displays gedit for 3s, then automatically closes
+    [timeout] exceeded 3s, terminating process...
+    [timeout] rc=-15 process terminated gracefully
+    [timeout] rc=0   process ended due to timeout
+
+    # on MSYS2 : displays notepad for 3s, then automatically closes
+    ```
+
 ### 🛠️  run_cmd
 
 * **Desc:** run a command in a subprocess
@@ -338,11 +363,9 @@ see ```sample/app.py``` for sample code.
 * Output:
 
     ```text
-    # on ubuntu
+    # on ubuntu, MSYS2
     xlat_dir_to_relative: ~/dir1/dir2
     xlat_dir_to_relative: ~/dir1/dir2
-
-    # on MSYS2
     ```
 
 > ## 📁 misc functions

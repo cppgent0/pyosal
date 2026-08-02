@@ -67,6 +67,16 @@ class App:
         pyosal.stderr_flush(force=True)
 
         # TODO run_cmd_timeout
+        timeout = 3  # seconds
+        msys_tag = None
+        if pyosal.os_name == 'ubuntu':
+            cmd = ['gedit', 'out/abc.txt']
+        elif pyosal.os_name == 'msys2':
+            cmd = ['notepad']
+            msys_tag = 'notepad.exe'
+        # TODO need macOS test
+        pyosal.run_cmd_timeout(timeout, cmd, msys_tag=msys_tag)
+
         # TODO run_cmd
 
         # uncomment to test abort() empty message
