@@ -43,3 +43,29 @@ class App:
 
         svc.log.info(f'root_dir : {pyosal.root_dir}')
         svc.log.info(f'root_dir_msys2: {pyosal.root_dir_msys2}')
+
+        path = '/c/dir1/dir2'
+        svc.log.info(f'xlat_to_win  : {pyosal.xlat_to_win(path)}')
+        svc.log.info(f'xlat_to_win  : {pyosal.xlat_to_win(path, force=True)}')
+
+        path = 'c:\\dir1\\dir2'
+        svc.log.info(f'xlat_to_posix: {pyosal.xlat_to_posix(path)}')
+        svc.log.info(f'xlat_to_posix: {pyosal.xlat_to_posix(path, force=True)}')
+
+        path = '/home/arrizza\\dir1\\dir2'
+        svc.log.info(f'xlat_dir_to_relative: {pyosal.xlat_dir_to_relative(path)}')
+        path = '/home/arrizza/dir1/dir2'
+        svc.log.info(f'xlat_dir_to_relative: {pyosal.xlat_dir_to_relative(path)}')
+
+        pyosal.stdout_flush()
+        pyosal.stdout_flush(force=True)
+
+        pyosal.stderr_flush()
+        pyosal.stderr_flush(force=True)
+
+        # TODO run_cmd_timeout
+        # TODO run_cmd
+
+        # uncomment to test abort() empty message
+        # pyosal.abort()
+        pyosal.abort('test of abort')

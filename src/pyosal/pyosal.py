@@ -865,10 +865,17 @@ class PyOsal(metaclass=_PyOsalMeta):
     # @param msg  (optional) message to display
     # @return does not return
     def abort(self, msg='abort occurred, exiting'):
-        sys.stdout.write('\n')
-        sys.stdout.write(f'ABRT {msg}\n')
+        # flush all other output first
         self.stdout_flush()
         self.stderr_flush()
+
+        sys.stdout.write('\n')
+        sys.stdout.write(f'ABRT {msg}\n')
+
+        # flush the new lines
+        self.stdout_flush()
+        self.stderr_flush()
+
         sys.exit(1)
 
     # === UT functions
