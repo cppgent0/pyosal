@@ -66,7 +66,7 @@ class App:
         pyosal.stderr_flush()
         pyosal.stderr_flush(force=True)
 
-        # TODO run_cmd_timeout
+        svc.log.info('run_cmd_timeout: running')
         timeout = 3  # seconds
         msys_tag = None
         if pyosal.os_name == 'ubuntu':
@@ -75,9 +75,15 @@ class App:
             cmd = ['notepad']
             msys_tag = 'notepad.exe'
         # TODO need macOS test
-        pyosal.run_cmd_timeout(timeout, cmd, msys_tag=msys_tag)
+        rc = pyosal.run_cmd_timeout(timeout, cmd, msys_tag=msys_tag)
+        svc.log.info(f'run_cmd_timeout rc={rc}')
 
-        # TODO run_cmd
+        svc.log.info('run_cmd: running')
+        cmd = ['pwd']
+        rc, lines = pyosal.run_cmd(cmd)
+        svc.log.info(f'run_cmd rc={rc}')
+        for lineno, line in enumerate(lines):
+            svc.log.info(f'  line {lineno}: {line}')
 
         # uncomment to test abort() empty message
         # pyosal.abort()

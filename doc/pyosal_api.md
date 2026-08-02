@@ -211,7 +211,7 @@ see ```sample/app.py``` for sample code.
     * `quiet`: if True, do not write to stdout
     * `msys_tag`: used only for MSYS2 processes; matches command line content for PID to kill
 
-* **Returns:** rc - return code, lines - the output as a list of lines
+* **Returns:** rc - return code
 
 * Sample code:
 
@@ -224,18 +224,25 @@ see ```sample/app.py``` for sample code.
         cmd = ['notepad']
         msys_tag = 'notepad.exe'
     # TODO need macOS test
-    pyosal.run_cmd_timeout(timeout, cmd, msys_tag=msys_tag)
+    rc = pyosal.run_cmd_timeout(timeout, cmd, msys_tag=msys_tag)
+    svc.log.info(f'run_cmd_timeout rc={rc}')
     ```
 
 * Output:
 
     ```text
     # on ubuntu: displays gedit for 3s, then automatically closes
+    run_cmd_timeout: running
     [timeout] exceeded 3s, terminating process...
     [timeout] rc=-15 process terminated gracefully
     [timeout] rc=0   process ended due to timeout
+    run_cmd_timeout rc=0
 
     # on MSYS2 : displays notepad for 3s, then automatically closes
+    -- [timeout] exceeded 3s, terminating process...
+    -- [timeout] MSYS2 detected...
+    -- [timeout] rc=0   process terminated gracefully
+    -- [timeout] rc=0   process ended due to timeout
     ```
 
 ### 🛠️  run_cmd
@@ -254,6 +261,25 @@ see ```sample/app.py``` for sample code.
     * `shared_container`: used by run_cmd_container to receive the proc value
 
 * **Returns:** rc - return code, lines - the output as a list of lines
+
+* Sample code:
+
+    ```python
+    svc.log.info('run_cmd: running')
+    cmd = ['pwd']
+    rc, lines = pyosal.run_cmd(cmd)
+    svc.log.info(f'run_cmd rc={rc}')
+    for lineno, line in enumerate(lines):
+        svc.log.info(f'  line {lineno}: {line}')
+    ```
+
+* Output:
+
+    ```text
+    run_cmd: running
+    -- /home/arrizza/projects/web/py-mods/pyosal
+    run_cmd rc=0
+    ```
 
 ### 🛠️  abort
 
