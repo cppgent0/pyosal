@@ -34,14 +34,14 @@ class _PyOsalMeta(type):
 
 
 # -------------------
-## holds OS specific info; there are four recognized OS:
+## holds OS specific info; there are currently four recognized OS:
 #    OS      os_name
 #  -------   ----------
 #  Ubuntu  : ubuntu
 #  Mac     : macos
 #  Windows : win (msys2)
-#  Windows : psi (powershell)
-#  RPI     : rpi
+#  Windows : psi (powershell) note: future support
+#  RPI     : rpi              note: future support
 class PyOsal(metaclass=_PyOsalMeta):
     # -------------------
     ## initialize
@@ -84,7 +84,7 @@ class PyOsal(metaclass=_PyOsalMeta):
     # * {'run'}       : print()'s for run_cmd
     # * {'run', 'timed'} : for both
     # @param val   the debug level to use
-    # @return Noen
+    # @return None
     def set_debug(self, val: set):
         self._debug = set(val)
 
@@ -344,7 +344,7 @@ class PyOsal(metaclass=_PyOsalMeta):
     # @param timeout          the max time the thread should run
     # @param shared_container used by run_cmd_container to receive the proc value
     # @param msys_tag         used only for MSYS2 processes; matches command line content for PID to kill
-    # @return 'timer_expired' when the exptected timeout has been reached,
+    # @return 'timer_expired' when the expected timeout has been reached,
     #          'cmd-dead' when the process has died,
     #          'cmd-running' when the process is still running and timeout has not been
     def _check_timer(self, thread_ptr, start_time, timeout, shared_container, msys_tag):
@@ -372,7 +372,7 @@ class PyOsal(metaclass=_PyOsalMeta):
     #
     # @param shared_container used by run_cmd_container to receive the proc value
     # @param msys_tag         used only for MSYS2 processes; matches command line content for PID to kill
-    # @return 'timer_expired' when the exptected timeout has been reached,
+    # @return 'timer_expired' when the expected timeout has been reached,
     #          'cmd-dead' when the process has died,
     #          'cmd-running' when the process is still running and timeout has not been
     def _check_timer_msys2(self, shared_container, msys_tag):
@@ -783,7 +783,7 @@ class PyOsal(metaclass=_PyOsalMeta):
                 sys.stderr.buffer.flush()
 
     # --------------------
-    ## convert a windows path to posix i.e. forward slashes
+    ## convert a path to windows i.e. backslashes
     # @param path    the path to fix
     # @param force   force the conversion no matter what the OS is
     # @return the unfixed path
@@ -870,18 +870,6 @@ class PyOsal(metaclass=_PyOsalMeta):
         self.stdout_flush()
         self.stderr_flush()
         sys.exit(1)
-
-    # # -------------------
-    # class ExcpAbort(Exception):
-    #     def __init__(self, message):
-    #         super().__init__(message)
-    #         self.level = 'line'
-    #         self.detail = None
-
-    # def abort(self, msg='ABRT session aborted', level='line'):
-    #     excp = ExcpAbort(msg)
-    #     excp.level = level
-    #     raise excp
 
     # === UT functions
 
