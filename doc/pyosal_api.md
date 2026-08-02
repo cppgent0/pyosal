@@ -239,10 +239,12 @@ see ```sample/app.py``` for sample code.
     run_cmd_timeout rc=0
 
     # on MSYS2 : displays notepad for 3s, then automatically closes
-    -- [timeout] exceeded 3s, terminating process...
-    -- [timeout] MSYS2 detected...
-    -- [timeout] rc=0   process terminated gracefully
-    -- [timeout] rc=0   process ended due to timeout
+    run_cmd_timeout: running
+    [timeout] exceeded 3s, terminating process...
+    [timeout] MSYS2 detected...
+    [timeout] rc=0   process terminated gracefully
+    [timeout] rc=0   process ended due to timeout
+
     ```
 
 ### 🛠️  run_cmd
@@ -276,8 +278,15 @@ see ```sample/app.py``` for sample code.
 * Output:
 
     ```text
+    # on ubuntu
     run_cmd: running
     -- /home/arrizza/projects/web/py-mods/pyosal
+    run_cmd rc=0
+
+    # on MSYS2
+    run_cmd_timeout rc=0
+    run_cmd: running
+      -- C:/Users/micro/projects/web/py-mods/pyosal
     run_cmd rc=0
     ```
 
