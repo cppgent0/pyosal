@@ -278,8 +278,13 @@ see ```sample/app.py``` for sample code.
 * Output:
 
     ```text
-    xlat_to_win  : \c\dir1\dir2   # on ubuntu
-    xlat_to_win  : C:\dir1\dir2   # on ubuntu with force
+    # on ubuntu
+    xlat_to_win  : \c\dir1\dir2
+    xlat_to_win  : C:\dir1\dir2   # with force
+   
+    # on MSYS2
+    xlat_to_win  : C:\dir1\dir2
+    xlat_to_win  : C:\dir1\dir2   # with force
     ```
 
 ### 🛠️  xlat_to_posix
@@ -303,8 +308,13 @@ see ```sample/app.py``` for sample code.
 * Output:
 
     ```text
-    xlat_to_posix: c:/dir1/dir2  # on ubuntu 
-    xlat_to_posix: /c/dir1/dir2  # on ubuntu with force
+    # on ubuntu 
+    xlat_to_posix: c:/dir1/dir2
+    xlat_to_posix: /c/dir1/dir2  # with force
+
+    # on MSYS2
+    xlat_to_posix: /c/dir1/dir2
+    xlat_to_posix: /c/dir1/dir2  # with force
     ```
 
 ### 🛠️  xlat_dir_to_relative
@@ -321,15 +331,18 @@ see ```sample/app.py``` for sample code.
     ```python
     path = '/home/arrizza\\dir1\\dir2'
     svc.log.info(f'xlat_dir_to_relative: {pyosal.xlat_dir_to_relative(path)}')
-    path = '/home/arrizza/dir1/dir2'
+    path = '/c/Users/your-userid/dir1/dir2'
     svc.log.info(f'xlat_dir_to_relative: {pyosal.xlat_dir_to_relative(path)}')
     ```
 
 * Output:
 
     ```text
-    xlat_dir_to_relative: ~/dir1/dir2   # on ubuntu
-    xlat_dir_to_relative: ~/dir1/dir2   # on ubuntu
+    # on ubuntu
+    xlat_dir_to_relative: ~/dir1/dir2
+    xlat_dir_to_relative: ~/dir1/dir2
+
+    # on MSYS2
     ```
 
 > ## 📁 misc functions

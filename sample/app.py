@@ -1,3 +1,5 @@
+import os
+
 from pyosal import pyosal
 from sample.svc import svc
 
@@ -52,9 +54,10 @@ class App:
         svc.log.info(f'xlat_to_posix: {pyosal.xlat_to_posix(path)}')
         svc.log.info(f'xlat_to_posix: {pyosal.xlat_to_posix(path, force=True)}')
 
-        path = '/home/arrizza\\dir1\\dir2'
+        home = os.path.expanduser('~')
+        path = f'{home}\\dir1\\dir2'
         svc.log.info(f'xlat_dir_to_relative: {pyosal.xlat_dir_to_relative(path)}')
-        path = '/home/arrizza/dir1/dir2'
+        path = f'{home}/dir1/dir2'
         svc.log.info(f'xlat_dir_to_relative: {pyosal.xlat_dir_to_relative(path)}')
 
         pyosal.stdout_flush()

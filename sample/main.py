@@ -7,7 +7,7 @@ from sample.svc import svc
 # --------------------
 ## mainline
 def main():
-    svc.log = FalconLogger()
+    svc.log = FalconLogger(mode='immediate')
     svc.log.set_format('none')
 
     app = App()
