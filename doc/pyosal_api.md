@@ -172,6 +172,7 @@ see ```sample/app.py``` for sample code.
     ```text
     root_dir : ~                     # on ubuntu
     root_dir : C:/Users/your-userid  # on MSYS2
+    root_dir : ~                     # on macos
     ```
 
 ### 🛠️  root_dir_msys2 (property)
@@ -189,8 +190,9 @@ see ```sample/app.py``` for sample code.
 * Output:
 
     ```text
-    root_dir_msys2: ~               # on ubuntu
-    root_dir_msys2: /c/Users/micro  # on MSYS2 (note path is posix)
+    root_dir_msys2: ~                     # on ubuntu
+    root_dir_msys2: /c/Users/your-userid  # on MSYS2 (note path is posix)
+    root_dir_msys2: ~                     # on macos
     ```
 
 > ## 📁 command runner functions
@@ -223,7 +225,8 @@ see ```sample/app.py``` for sample code.
     elif pyosal.os_name == 'msys2':
         cmd = ['notepad']
         msys_tag = 'notepad.exe'
-    # TODO need macOS test
+    elif pyosal.os_name == 'macos':
+        cmd = ['open', '-a', 'TextEdit']
     rc = pyosal.run_cmd_timeout(timeout, cmd, msys_tag=msys_tag)
     svc.log.info(f'run_cmd_timeout rc={rc}')
     ```
@@ -245,6 +248,8 @@ see ```sample/app.py``` for sample code.
     [timeout] rc=0   process terminated gracefully
     [timeout] rc=0   process ended due to timeout
 
+    # on macos
+    TODO Under construction
     ```
 
 ### 🛠️  run_cmd
@@ -280,13 +285,17 @@ see ```sample/app.py``` for sample code.
     ```text
     # on ubuntu
     run_cmd: running
-    -- /home/arrizza/projects/web/py-mods/pyosal
+    -- /home/your-userid/projects/web/py-mods/pyosal
     run_cmd rc=0
 
     # on MSYS2
-    run_cmd_timeout rc=0
     run_cmd: running
-      -- C:/Users/micro/projects/web/py-mods/pyosal
+      -- C:/Users/your-userid/projects/web/py-mods/pyosal
+    run_cmd rc=0
+
+    # on macos
+    run_cmd: running
+      -- /Users/your-userid/projects/web/py-mods/pyosal
     run_cmd rc=0
     ```
 
@@ -389,7 +398,7 @@ see ```sample/app.py``` for sample code.
 * Sample code:
 
     ```python
-    path = '/home/arrizza\\dir1\\dir2'
+    path = '/home/your-userid\\dir1\\dir2'
     svc.log.info(f'xlat_dir_to_relative: {pyosal.xlat_dir_to_relative(path)}')
     path = '/c/Users/your-userid/dir1/dir2'
     svc.log.info(f'xlat_dir_to_relative: {pyosal.xlat_dir_to_relative(path)}')

@@ -75,7 +75,7 @@ class App:
             cmd = ['notepad']
             msys_tag = 'notepad.exe'
         elif pyosal.os_name == 'macos':
-            cmd = ['open', 'a', 'TextEdit']
+            cmd = ['open', '-a', 'TextEdit']
         rc = pyosal.run_cmd_timeout(timeout, cmd, msys_tag=msys_tag)
         svc.log.info(f'run_cmd_timeout rc={rc}')
 
