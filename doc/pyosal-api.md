@@ -257,33 +257,33 @@ see ```sample/app.py``` for sample code.
     run_cmd_timeout rc=0
     ```
 
-Also see ```sys-tests/test1.sh``` and ```test1-timeout.py``` for more examples:
+* Also see ```sys-tests/test1.sh``` and ```test1-timeout.py``` for more examples:
 
-```bash
-sys-tests/test1.sh normal
-# typical output:
-running normal scenario: app ends before timeout
-  -- test1_timer: scenario:normal max_time=2
-  -- 00:00.000      elapsed=0.0
-  -- 00:00.300      awake
-  -- 00:00.300      elapsed=0.3
-  -- 00:00.600      awake
-  -- 00:00.600      elapsed=0.6
-  -- 00:00.900      awake
-  -- 00:00.900      elapsed=0.9
-  -- 00:01.200      awake
-  -- 00:01.200      elapsed=1.2
-  -- 00:01.501      awake
-  -- 00:01.501      elapsed=1.5
-  -- 00:01.801      awake
-  -- 00:01.801      elapsed=1.8
-  -- 00:02.101      awake
-  -- 00:02.101      elapsed=2.1
-  -- 00:02.101      exiting at: 2.1
-[timeout] rc=0   process finished before timeout
-expected rc=0 act rc=0
-test1: rc=0
-```
+    ```bash
+    sys-tests/test1.sh normal
+    # typical output:
+    running normal scenario: app ends before timeout
+    -- test1_timer: scenario:normal max_time=2
+    -- 00:00.000      elapsed=0.0
+    -- 00:00.300      awake
+    -- 00:00.300      elapsed=0.3
+    -- 00:00.600      awake
+    -- 00:00.600      elapsed=0.6
+    -- 00:00.900      awake
+    -- 00:00.900      elapsed=0.9
+    -- 00:01.200      awake
+    -- 00:01.200      elapsed=1.2
+    -- 00:01.501      awake
+    -- 00:01.501      elapsed=1.5
+    -- 00:01.801      awake
+    -- 00:01.801      elapsed=1.8
+    -- 00:02.101      awake
+    -- 00:02.101      elapsed=2.1
+    -- 00:02.101      exiting at: 2.1
+    [timeout] rc=0   process finished before timeout
+    expected rc=0 act rc=0
+    test1: rc=0
+    ```
 
 ### 🛠️  run_cmd
 

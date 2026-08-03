@@ -6,4 +6,4 @@ from dataclasses import dataclass
 @dataclass
 class ConstantsVersion:
     ## current App version
-    version = '0.1.12'
+    version = '0.2.0'

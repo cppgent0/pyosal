@@ -875,7 +875,8 @@ class PyOsal(metaclass=_PyOsalMeta):
         self.stdout_flush()
         self.stderr_flush()
 
-        sys.exit(1)
+        if not self._ut_mode:
+            sys.exit(1)
 
     # === UT functions
 
