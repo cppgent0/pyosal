@@ -87,6 +87,22 @@ class App:
         for lineno, line in enumerate(lines):
             svc.log.info(f'  line {lineno}: {line}')
 
+        pyosal.ut_mode = False
+        svc.log.info(f'ut_mode:{str(pyosal.ut_mode): <5} name:{pyosal.os_name} vers:{pyosal.os_version}')
+        pyosal.ut_mode = True
+        svc.log.info(f'ut_mode:{str(pyosal.ut_mode): <5} name:{pyosal.os_name} vers:{pyosal.os_version}')
+
+        if pyosal.os_name == 'ubuntu':
+            ut_os = 'macos'
+        elif pyosal.os_name == 'macos':
+            ut_os = 'msys2'
+        elif pyosal.os_name == 'msys2':
+            ut_os = 'ubuntu'
+        real_os = pyosal.os_name
+        svc.log.info(f'on {real_os} before: {pyosal.os_name} ')
+        pyosal.ut_info(ut_os)
+        svc.log.info(f'on {real_os} after : {pyosal.os_name}')
+
         # uncomment to test abort() empty message
         # pyosal.abort()
         pyosal.abort('test of abort')

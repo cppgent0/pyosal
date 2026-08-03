@@ -488,25 +488,13 @@ test1: rc=0
 
 > ## 📁 UT and Debug functions
 
-### 🛠️  ut_mode (getter)
+### 🛠️ ut_mode (setter/getter)
 
-* **Desc:** get ut_mode
+* **Desc:** set for ut_mode.
+  if set to False (default) then it behaves as per the actual OS.
+  if set to True, then it returns specific values for ```os_version```
 
-* **Returns:** ut_mode (true/false)
-
-* Sample code:
-
-    ```python
-    ```
-
-* Output:
-
-    ```text
-    ```
-
-### 🛠️ ut_mode (setter)
-
-* **Desc:** set for ut_mode
+Note: this may change as UT needs are met.
 
 * **Arguments:**
     * `val`: new value to use
@@ -516,35 +504,57 @@ test1: rc=0
 * Sample code:
 
     ```python
+    pyosal.ut_mode = False
+    svc.log.info(f'ut_mode:{str(pyosal.ut_mode): <5} name:{pyosal.os_name} vers:{pyosal.os_version}')
+    pyosal.ut_mode = True
+    svc.log.info(f'ut_mode:{str(pyosal.ut_mode): <5} name:{pyosal.os_name} vers:{pyosal.os_version}')  
     ```
 
 * Output:
 
     ```text
+    # on ubuntu: os_versions happen to match (may change)
+    ut_mode:False name:ubuntu vers:Ubuntu 24.04 noble
+    ut_mode:True  name:ubuntu vers:Ubuntu 24.04 noble
+
+
     ```
 
 ### 🛠️  ut_info
 
-* **Desc:** get/set os_name
+* **Desc:** set os_name to use
 
 * **Arguments:**
     * `ut_os_name`: new value to use
 
 * **Returns:** ut_mode (true/false)
 
-### 🛠️  set_debug
-
 * Sample code:
 
     ```python
+    if pyosal.os_name == 'ubuntu':
+        ut_os = 'macos'
+    elif pyosal.os_name == 'macos':
+        ut_os = 'msys2'
+    elif pyosal.os_name == 'msys2':
+        ut_os = 'ubuntu'
+    real_os = pyosal.os_name
+    svc.log.info(f'on {real_os}: {pyosal.os_name}')
+    pyosal.ut_info(ut_os)
+    svc.log.info(f'on {real_os}: {pyosal.os_name}')
     ```
 
 * Output:
 
     ```text
+    on ubuntu before: ubuntu
+    on ubuntu after : macos
     ```
 
+### 🛠️  set_debug
+
 * **Desc:** set debug to print extra info.
+  see ```run_cmd_timeout()``` and ```run_cmd``` code.
 
 * **Arguments:**
     * `val`: the debug level to use
@@ -554,13 +564,3 @@ test1: rc=0
         * {'run', 'timed'} : for both
 
 * **Returns:** None
-
-* Sample code:
-
-    ```python
-    ```
-
-* Output:
-
-    ```text
-    ```
