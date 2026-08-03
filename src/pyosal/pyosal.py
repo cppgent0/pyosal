@@ -893,6 +893,9 @@ class PyOsal(metaclass=_PyOsalMeta):
     @ut_mode.setter
     def ut_mode(self, val):
         self._ut_mode = val
+        if self._ut_mode:
+            # set the values again for ut_mode
+            self._set_all_data()
 
     # -------------------
     ## get set os_name

@@ -523,7 +523,7 @@ Note: this may change as UT needs are met.
 
     # on macos: (may change)
     ut_mode:False name:macos vers:macOS 26.6
-    ut_mode:True  name:macos vers:ut macOS 26.6
+    ut_mode:True  name:macos vers:ut macOS 14.5
     ```
 
 ### 🛠️  ut_info
@@ -579,3 +579,12 @@ Note: this may change as UT needs are met.
         * {'run', 'timed'} : for both
 
 * **Returns:** None
+
+* Sample code:
+
+    ```python
+    pyosal.set_debug({'timed'}) # only the run_cmd_timeout debug statements
+    pyosal.set_debug({'run'})   # only the run_cmd debug statements
+    pyosal.set_debug({'timed', 'run'}) # both sets of debug statements
+    pyosal.set_debug(set())      # turn off debugging
+    ```
