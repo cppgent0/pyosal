@@ -3,6 +3,33 @@
 This is a summary of the functions available for pyosal.
 
 see ```sample/app.py``` for sample code.
+You also check out run_cmd_timeout() using:
+
+```bash
+sys-tests/test1.sh normal
+# typical output:
+running normal scenario: app ends before timeout
+  -- test1_timer: scenario:normal max_time=2
+  -- 00:00.000      elapsed=0.0
+  -- 00:00.300      awake
+  -- 00:00.300      elapsed=0.3
+  -- 00:00.600      awake
+  -- 00:00.600      elapsed=0.6
+  -- 00:00.900      awake
+  -- 00:00.900      elapsed=0.9
+  -- 00:01.200      awake
+  -- 00:01.200      elapsed=1.2
+  -- 00:01.501      awake
+  -- 00:01.501      elapsed=1.5
+  -- 00:01.801      awake
+  -- 00:01.801      elapsed=1.8
+  -- 00:02.101      awake
+  -- 00:02.101      elapsed=2.1
+  -- 00:02.101      exiting at: 2.1
+[timeout] rc=0   process finished before timeout
+expected rc=0 act rc=0
+test1: rc=0
+```
 
 > ## 📁 various OS values
 
@@ -234,22 +261,27 @@ see ```sample/app.py``` for sample code.
 * Output:
 
     ```text
-    # on ubuntu: displays gedit for 3s, then automatically closes
+    # on ubuntu: displays GUI app (e.g. gedit) for 3s, then automatically closes
     run_cmd_timeout: running
     [timeout] exceeded 3s, terminating process...
     [timeout] rc=-15 process terminated gracefully
     [timeout] rc=0   process ended due to timeout
     run_cmd_timeout rc=0
 
-    # on MSYS2 : displays notepad for 3s, then automatically closes
+    # on MSYS2 : displays GUI app (e.g. notepad) for 3s, then automatically closes
     run_cmd_timeout: running
     [timeout] exceeded 3s, terminating process...
-    [timeout] MSYS2 detected...
+    [timeout] msys2 detected...
     [timeout] rc=0   process terminated gracefully
     [timeout] rc=0   process ended due to timeout
 
-    # on macos
-    TODO Under construction
+    # on macos : displays GUI app (e.g. TextEdit) for 3s, then automat
+    run_cmd_timeout: running
+    [timeout] exceeded 3s, terminating process...
+    [timeout] macos detected...
+    [timeout] rc=0   process terminated gracefully
+    [timeout] rc=0   process ended due to timeout
+    run_cmd_timeout rc=0
     ```
 
 ### 🛠️  run_cmd

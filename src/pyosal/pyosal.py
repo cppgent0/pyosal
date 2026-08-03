@@ -250,7 +250,7 @@ class PyOsal(metaclass=_PyOsalMeta):
     # @param print_cb      callback function used to print output; default is None
     # @param env           the environment variables to use
     # @param quiet         if True, do not write to stdout
-    # @param msys_tag      used only for MSYS2 processes; matches command line content for PID to kill
+    # @param cmd_tag       used for MSYS2/macos processes; matches command line content for PID to kill
     # @return rc - return code, lines - the output as a list of lines
     def run_cmd_timeout(
         self,
@@ -262,7 +262,7 @@ class PyOsal(metaclass=_PyOsalMeta):
         print_cb=None,
         env=None,
         quiet=False,
-        msys_tag='NOTEPAD',
+        cmd_tag='NOTEPAD',
     ):  # pylint: disable=too-many-locals
         if not isinstance(timeout, int):
             self.abort('PyOsal.run_cmd_timeout: timeout must be an integer')
@@ -288,9 +288,9 @@ class PyOsal(metaclass=_PyOsalMeta):
         timed_out = False
         state = 'start'
         while True:
-            # wait here so that the bash terminal in MSYS2 can end
+            # wait here so that the bash terminal in MSYS2/macos can end
             time.sleep(0.3)
-            state = self._check_timer(t, start_time, timeout, shared_container, msys_tag)
+            state = self._check_timer(t, start_time, timeout, shared_container, cmd_tag)
             if state in ['cmd-dead', 'timer_expired']:
                 break
 
@@ -343,7 +343,7 @@ class PyOsal(metaclass=_PyOsalMeta):
     # @param start_time       the time the bg thread started
     # @param timeout          the max time the thread should run
     # @param shared_container used by run_cmd_container to receive the proc value
-    # @param msys_tag         used only for MSYS2 processes; matches command line content for PID to kill
+    # @param msys_tag         used only for MSYS2/macos processes; matches command line content for PID to kill
     # @return 'timer_expired' when the expected timeout has been reached,
     #          'cmd-dead' when the process has died,
     #          'cmd-running' when the process is still running and timeout has not been
@@ -352,10 +352,10 @@ class PyOsal(metaclass=_PyOsalMeta):
         if elapsed > timeout:
             return 'timer_expired'
 
-        if self._os_name == 'msys2':
+        if self._os_name in ['msys2', 'macos']:
             if 'timed' in self._debug:
                 print(f'pyosal.check_timer_msys2:  {round(elapsed, 1)} {round(time.time(), 1)} ==================================')
-            return self._check_timer_msys2(shared_container, msys_tag)
+            return self._check_timer_alt(shared_container, msys_tag)
 
         # handle macos and ubuntu
         if not thread_ptr.is_alive():
@@ -363,19 +363,18 @@ class PyOsal(metaclass=_PyOsalMeta):
         return 'cmd-running'
 
     # -------------------
-    ## for MSYS2: check the process is still running.
-    # in MSYS2: parent_pid.children() does not work as it does in POSIX systems.
-    # this is a hack to get the correct PID for killing
-    # at this point: in msys2 session and timer has not expired
-    # the initial msys2 thread will immediately die
-    # so the current processes running
+    ## for MSYS2/macos: check the process is still running.
+    # the cmd_tag is used to get the correct PID for killing.
+    # at this point: in msys2/macos session and timer has not expired
+    # the initial msys2/macos thread will immediately die
+    # but the current processes are strill running
     #
     # @param shared_container used by run_cmd_container to receive the proc value
-    # @param msys_tag         used only for MSYS2 processes; matches command line content for PID to kill
+    # @param cmd_tag          used only for msys2/macos processes; matches command line content for PID to kill
     # @return 'timer_expired' when the expected timeout has been reached,
     #          'cmd-dead' when the process has died,
     #          'cmd-running' when the process is still running and timeout has not been
-    def _check_timer_msys2(self, shared_container, msys_tag):
+    def _check_timer_alt(self, shared_container, cmd_tag):
         process_list = []
         # psutil.process_iter fetches all running processes efficiently in a single sweep
         for proc in psutil.process_iter(['pid', 'name', 'cmdline']):
@@ -417,7 +416,7 @@ class PyOsal(metaclass=_PyOsalMeta):
             # capitalization is not relevant
             cmd_line = info['CommandLine'].lower()
             pfx = '  '
-            if msys_tag.lower() in cmd_line:
+            if cmd_tag.lower() in cmd_line:
                 pfx = '**'
                 state = 'cmd-running'
                 state_pid = info['PID']
@@ -432,7 +431,7 @@ class PyOsal(metaclass=_PyOsalMeta):
         elif shared_container['state'] == 'cmd-running' and state == 'cmd-not-found':
             shared_container['state'] = 'cmd-dead'
         elif 'timed' in self._debug:
-            print(f'pyosal.check_timer_msys2: state:{state} shared:{shared_container["state"]}')
+            print(f'pyosal.check_timer_alt: state:{state} shared:{shared_container["state"]}')
 
         sys.stdout.flush()
         return state
@@ -443,8 +442,8 @@ class PyOsal(metaclass=_PyOsalMeta):
     # @param action     if "kill", kills the processes, otherwise terminates the prcesses
     # @return None
     def _kill_process_tree(self, shared_container, action):
-        if self._os_name in ['msys2']:
-            rc = self._kill_msys2_process_tree(shared_container)
+        if self._os_name in ['msys2', 'macos']:
+            rc = self._kill_alt_process_tree(shared_container)
         else:  # macos and ubuntu
             rc = self._kill_posix_process_tree(shared_container, action)
         return rc
@@ -455,12 +454,12 @@ class PyOsal(metaclass=_PyOsalMeta):
     #
     # @param shared_container used by run_cmd_container to receive the proc value
     # @return the return code
-    def _kill_msys2_process_tree(self, shared_container):
+    def _kill_alt_process_tree(self, shared_container):
         rc = 0
-        print('[timeout] MSYS2 detected...')
+        print(f'[timeout] {self.os_name} detected...')
         if 'timer' in self._debug:
             cmd_str = ' '.join(shared_container['cmd'][2:])
-            print(f'pyosal._kill_msys2_process_tree: pids={shared_container["pids"]} cmd="{cmd_str}"')
+            print(f'pyosal._kill_alt_process_tree: pids={shared_container["pids"]} cmd="{cmd_str}"')
 
         for pid in shared_container['pids']:
             if not psutil.pid_exists(pid):
@@ -557,7 +556,7 @@ class PyOsal(metaclass=_PyOsalMeta):
 
         ## os_name: see above
         if self._os_name == 'msys2':
-            # need to invokve msys2 bash
+            # need to invoke msys2 bash
             pfx = ['c:/msys64/usr/bin/bash', '-c']
             # the current cmd is a single string at the end
             pfx.append(' '.join(cmd))

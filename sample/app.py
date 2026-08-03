@@ -1,7 +1,7 @@
 import os
 
-from pyosal import pyosal
 from sample.svc import svc
+from src.pyosal import pyosal
 
 
 # --------------------
@@ -68,15 +68,16 @@ class App:
 
         svc.log.info('run_cmd_timeout: running')
         timeout = 3  # seconds
-        msys_tag = None
+        cmd_tag = None
         if pyosal.os_name == 'ubuntu':
             cmd = ['gedit', 'out/abc.txt']
         elif pyosal.os_name == 'msys2':
             cmd = ['notepad']
-            msys_tag = 'notepad.exe'
+            cmd_tag = 'notepad.exe'
         elif pyosal.os_name == 'macos':
             cmd = ['open', '-a', 'TextEdit']
-        rc = pyosal.run_cmd_timeout(timeout, cmd, msys_tag=msys_tag)
+            cmd_tag = 'TextEdit'
+        rc = pyosal.run_cmd_timeout(timeout, cmd, cmd_tag=cmd_tag)
         svc.log.info(f'run_cmd_timeout rc={rc}')
 
         svc.log.info('run_cmd: running')
