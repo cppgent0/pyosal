@@ -513,11 +513,17 @@ Note: this may change as UT needs are met.
 * Output:
 
     ```text
-    # on ubuntu: os_versions happen to match (may change)
+    # on ubuntu: (may change)
     ut_mode:False name:ubuntu vers:Ubuntu 24.04 noble
-    ut_mode:True  name:ubuntu vers:Ubuntu 24.04 noble
+    ut_mode:True  name:ubuntu vers:ut Ubuntu 24.04 noble
 
+    # on msys2: (may change)
+    ut_mode:False name:msys2 vers:win32 Windows 11
+    ut_mode:True  name:msys2 vers:ut win32 Windows 11
 
+    # on macos: (may change)
+    ut_mode:False name:macos vers:macOS 26.6
+    ut_mode:True  name:macos vers:ut macOS 26.6
     ```
 
 ### 🛠️  ut_info
@@ -547,8 +553,17 @@ Note: this may change as UT needs are met.
 * Output:
 
     ```text
+    # on ubuntu
     on ubuntu before: ubuntu
     on ubuntu after : macos
+
+    # on msys2
+    on msys2 before: msys2
+    on msys2 after : ubuntu
+
+    # on macos
+    on macos before: macos 
+    on macos after : msys2
     ```
 
 ### 🛠️  set_debug

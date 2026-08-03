@@ -161,14 +161,14 @@ class PyOsal(metaclass=_PyOsalMeta):
             self._root_dir_msys2 = '/' + self._root_dir[0].lower() + self._root_dir[2:]
         elif self._os_name == 'macos':
             if self._ut_mode:  # pragma: no cover
-                self._os_version = 'macOS 14.5'
+                self._os_version = 'ut macOS 14.5'
             else:
                 self._os_version = f'macOS {platform.mac_ver()[0]}'  # pragma: no cover
             self._root_dir = '~'
             self._root_dir_msys2 = self._root_dir
         elif self._os_name == 'ubuntu':
             if self._ut_mode:
-                self._os_version = 'Ubuntu 24.04 noble'
+                self._os_version = 'ut Ubuntu 24.04 noble'
             else:
                 self._os_version = self._ubuntu_os_version()
             self._root_dir = '~'
