@@ -626,7 +626,7 @@ class PyOsal(metaclass=_PyOsalMeta):
             # append the current chunk
             # Some apps use linefeeds to do "progress" lines (e.g. 10% 11% etc), so replace any linefeeds with nothing
             if char == '\r':
-                char = ' '
+                char = '\n'
 
             buffer += char
 
