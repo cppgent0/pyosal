@@ -273,6 +273,7 @@ class PyOsal(metaclass=_PyOsalMeta):
         # Run your existing function in a background thread
         shared_container = {}
         t = threading.Thread(target=self.run_cmd, args=(cmd, working_dir, use_raw_log, log_file, print_cb, env, quiet, shared_container))
+        t.daemon = True
         t.start()
 
         # Wait briefly for the subprocess to actually initialize and populate the container
@@ -301,7 +302,7 @@ class PyOsal(metaclass=_PyOsalMeta):
             timed_out = True
             rc = 0  # override rc since timeout is expected
 
-        t.join()
+        t.join(timeout=0.25)
         rc_str = f'rc={rc}'
         if shared_container['proc'] is None:
             sys.stdout.write(f'[timeout] {rc_str: <6} process ended due to exception\n')
@@ -326,7 +327,7 @@ class PyOsal(metaclass=_PyOsalMeta):
         try:
             rc = self._kill_process_tree(shared_container, 'terminate')
             rc_str = f'rc={rc}'
-            print(f'[timeout] {rc_str: <6} process terminated gracefully')
+            sys.stdout.write(f'[timeout] {rc_str: <6} process terminated gracefully\n')
         except subprocess.TimeoutExpired:
             sys.stdout.write('[timeout] process did not terminate, killing process...\n')
             sys.stdout.flush()
@@ -457,16 +458,20 @@ class PyOsal(metaclass=_PyOsalMeta):
     def _kill_alt_process_tree(self, shared_container):
         rc = 0
         print(f'[timeout] {self.os_name} detected...')
-        if 'timer' in self._debug:
-            cmd_str = ' '.join(shared_container['cmd'][2:])
+        if 'timed' in self._debug:
+            cmd_str = ' '.join(shared_container['cmd'])
             print(f'pyosal._kill_alt_process_tree: pids={shared_container["pids"]} cmd="{cmd_str}"')
 
         for pid in shared_container['pids']:
             if not psutil.pid_exists(pid):
+                if 'timed' in self._debug:
+                    print(f'pyosal._kill_alt_process_tree: pid={pid} does not exist')
                 continue
             proc = psutil.Process(pid)
             # terminate does not work in windows
             proc.kill()
+            if 'timed' in self._debug:
+                print(f'pyosal._kill_alt_process_tree: pid={pid} killed')
             time.sleep(0.010)
         return rc
 
@@ -585,7 +590,6 @@ class PyOsal(metaclass=_PyOsalMeta):
                 universal_newlines=True,
                 errors='replace',
                 text=True,
-                # stdin=subprocess.DEVNULL,
                 stdin=None,
                 stdout=subprocess.PIPE,
                 stderr=subprocess.STDOUT,
@@ -612,30 +616,31 @@ class PyOsal(metaclass=_PyOsalMeta):
             shared_container['state'] = 'cmd-not-found'
 
         # buffer contains the current set of bytes read from proc.stdout so far
-        buffer = b''
+        buffer = ''
         while True:
-            chunk = os.read(proc.stdout.fileno(), 256)
-            if not chunk:
+            char = proc.stdout.read(1)
+            if not char:
+                # it's ''
                 break
 
             # append the current chunk
             # Some apps use linefeeds to do "progress" lines (e.g. 10% 11% etc), so replace any linefeeds with nothing
-            buffer += chunk.replace(b'\r', b'')
+            if char == '\r':
+                char = ' '
 
-            # if there was a newline in the buffer, then we have at least a full line of characters
-            if b'\n' not in buffer:
+            buffer += char
+
+            # if there is a newline in the buffer, then we have at least a full line of characters
+            if '\n' not in buffer:
                 continue
 
             # split the buffer at the newline(s)
-            buff_lines = buffer.split(b'\n')
+            buff_lines = buffer.split('\n')
             # save the remaining bytes in buffer
             buffer = buff_lines.pop()
 
             # at this point buff_lines contains one or more lines (as bytes)
-            for line_bytes in buff_lines:
-                # convert the bytes to UTF-8 chars
-                line = line_bytes.decode('utf-8', errors='replace')
-
+            for line in buff_lines:
                 if 'run' in self._debug:
                     if not line.isprintable():
                         sys.stdout.write('has hex: ' + ascii(line) + '\n')
@@ -668,10 +673,9 @@ class PyOsal(metaclass=_PyOsalMeta):
 
         # at this point: chunk was empty
         if len(buffer) > 0:
-            buff_lines = buffer.split(b'\n')
-            for line_bytes in buff_lines:
+            lines = buffer.split('\n')
+            for line in lines:
                 lineno += 1
-                line = line_bytes.decode('utf-8', errors='replace')
                 self._save_line(line, lineno, lines, fp, print_cb, use_raw_log, quiet)
 
         if fp:
