@@ -468,11 +468,11 @@ class PyOsal(metaclass=_PyOsalMeta):
                     print(f'pyosal._kill_alt_process_tree: pid={pid} does not exist')
                 continue
             proc = psutil.Process(pid)
-            # terminate does not work in windows
+            # terminate does not work in windows, must use kill
             proc.kill()
             if 'timed' in self._debug:
                 print(f'pyosal._kill_alt_process_tree: pid={pid} killed')
-            time.sleep(0.010)
+            time.sleep(0.100)
         return rc
 
     # -------------------
@@ -517,7 +517,7 @@ class PyOsal(metaclass=_PyOsalMeta):
     ## kill a POSIX process
     # @param pid       the process id to kill
     # @param action    "terminate" to ask process to terminate itself.
-    #                         "kill" to terminate the process externally
+    #                  "kill" to terminate the process externally
     # @return None
     def _kill_process(self, pid, action):
         try:
@@ -532,6 +532,9 @@ class PyOsal(metaclass=_PyOsalMeta):
             # If no permission to kill the root child, escalate the kill command using sudo
             cmd = ['sudo', 'kill', '-9' if action == 'kill' else '-15', str(pid.pid)]
             subprocess.run(cmd, check=False)
+
+        # give it time to clean up
+        time.sleep(0.100)
 
     # -------------------
     ## run a command in a subprocess
