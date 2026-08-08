@@ -221,6 +221,8 @@ function xplat_install {
   set_simlink
   tools/xplat_utils/install/do_install_zpm
   tools/xplat_utils/install/do_install_basic
+  export PATH=$HOME/.local/bin:$PATH
+  eval "$(vfox activate bash)"
 
   cp "$XP_LOCAL_MAIN" "$XP_CMN_MAIN"
 }
