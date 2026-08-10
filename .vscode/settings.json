@@ -26,7 +26,7 @@
   "editor.autoIndent": "advanced",
   "editor.rulers": [140],
   "editor.wordWrap": "wordWrapColumn",
-  "editor.wordWrapColumn": 140,
+  "editor.wordWrapColumn": 180,
   "editor.autoIndentOnPaste": true,
   "editor.detectIndentation": false,
   "editor.indentSize": "tabSize",
@@ -161,7 +161,7 @@
   "[javascript]": {
     "editor.defaultFormatter": "esbenp.prettier-vscode",
     "editor.wordWrap": "wordWrapColumn",
-    "editor.wordWrapColumn": 140,
+    "editor.wordWrapColumn": 180,
     "editor.formatOnSave": true,
     "editor.detectIndentation": false,
     "editor.insertSpaces": true,

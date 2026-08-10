@@ -21,4 +21,5 @@ else
   if [[ $1 != quiet ]]; then
     echo 'OK   use "deactivate" to exit python venv'
   fi
+  zpm_set_pythonpath
 fi
