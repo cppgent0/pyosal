@@ -9,7 +9,13 @@ Run the following in order:
     The first time after cloning this project, or for any updates, run:
 
     ```bash
-    zpm xplat-install
+    tools/zpm xplat-install
+    ```
+
+    Install basic environment, run:
+
+    ```bash
+    zpm env-install update
     ```
 
 1. **remove out directory**
@@ -21,7 +27,7 @@ Run the following in order:
     zpm clean full  # to clean out pycaches, coverage, and other temp files
     ```
 
-1. **run do_install**
+1. **run install**
 
     This step ensures additional utilities and python modules are installed correctly
 
