@@ -1,4 +1,6 @@
 * website: [Website](https://arrizza.com/pyosal.html)
+* copyright: [Copyright and License](https://arrizza.com/copyright-license.html)
+* repo status: [Repo Information](https://arrizza.com/repo-information.html)
 * installation: [Common Setup](https://arrizza.com/setup-common.html)
 
 ## Summary
