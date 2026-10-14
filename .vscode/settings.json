@@ -35,9 +35,19 @@
   "prettier.documentSelectors": ["**/.editorconfig"],
   "prettier.printWidth": 140,
   // === python
-  "python-envs.defaultEnvManager": "ms-python.python:system",
+  "python-envs.defaultEnvManager": "ms-python.python:venv",
   "python-envs.workspaceSearchPaths": ["%USERPROFILE%/.local/share/xplat-common"],
   "python.analysis.typeCheckingMode": "off",
+  // does not work
+  // "linux": {
+  //   "python.defaultInterpreterPath": "${env:HOME}/.local/share/xplat-common/venv/bin/python"
+  // },
+  // "osx": {
+  //   "python.defaultInterpreterPath": "${env:HOME}/.local/share/xplat-common/venv/bin/python"
+  // },
+  // "windows": {
+  //   "python.defaultInterpreterPath": "${env:USERPROFILE}\\.local\\share\\xplat-common\\venv\\Scripts\\python.exe"
+  // },
   "[python]": {
     "editor.defaultFormatter": "charliermarsh.ruff",
     "editor.formatOnSave": true,

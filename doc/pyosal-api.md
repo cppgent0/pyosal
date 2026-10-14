@@ -1,4 +1,4 @@
-# pyosal API
+## pyosal API
 
 This is a summary of the functions available for pyosal.
 
