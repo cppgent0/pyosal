@@ -10,6 +10,8 @@ It contains various functions help write cross-platform python code.
 
 see ```doc/pyosal_api.md``` or the website above for more information about these functions.
 
+## Future changes
+
 Over time, I will be searching through my projects looking for code like:
 
 ```python
